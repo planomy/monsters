@@ -128,18 +128,20 @@ def split_sheet(path: Path) -> dict[str, Image.Image]:
     return split_grid(path)
 
 
+def is_neutral_tone(r: int, g: int, b: int, chroma: int = 10) -> bool:
+    return max(r, g, b) - min(r, g, b) <= chroma
+
+
 def is_checker_flood_tone(r: int, g: int, b: int) -> bool:
-    if max(r, g, b) - min(r, g, b) > 8:
+    if not is_neutral_tone(r, g, b, chroma=8):
         return False
-    minimum = min(r, g, b)
-    return 240 <= minimum <= 251
+    return min(r, g, b) >= 240
 
 
 def is_checker_scrub_tone(r: int, g: int, b: int) -> bool:
-    if max(r, g, b) - min(r, g, b) > 8:
+    if not is_neutral_tone(r, g, b, chroma=8):
         return False
-    minimum = min(r, g, b)
-    return 240 <= minimum <= 247
+    return min(r, g, b) >= 240
 
 
 def is_checkerboard_pixel(r: int, g: int, b: int, a: int) -> bool:
@@ -164,6 +166,12 @@ def is_dark_background_pixel(r: int, g: int, b: int, a: int) -> bool:
     if a < 20:
         return True
     return r <= BG_THRESHOLD and g <= BG_THRESHOLD and b <= BG_THRESHOLD
+
+
+def is_speckle_background_pixel(r: int, g: int, b: int, a: int) -> bool:
+    if a < 20:
+        return True
+    return is_neutral_tone(r, g, b, chroma=30) and min(r, g, b) >= 200
 
 
 def detect_bg_mode(image: Image.Image) -> str:
@@ -254,14 +262,50 @@ def flood_fill_background(
 
 
 def scrub_checkerboard_pixels(rgba: Image.Image) -> Image.Image:
+    """Remove checkerboard pixels touching transparency, not enclosed character whites."""
+    return scrub_pixels_adjacent_to_transparent(rgba, is_checker_scrub_tone, max_passes=2)
+
+
+def is_warm_halo_tone(r: int, g: int, b: int) -> bool:
+    """Neutral checkerboard fringe left on character edges."""
+    return min(r, g, b) >= 228 and is_neutral_tone(r, g, b, chroma=12)
+
+
+def scrub_pixels_adjacent_to_transparent(
+    rgba: Image.Image,
+    predicate,
+    *,
+    max_passes: int | None = None,
+) -> Image.Image:
+    """Peel background remnants without eating enclosed character fills."""
     pixels = rgba.load()
     width, height = rgba.size
-    for y in range(height):
-        for x in range(width):
-            r, g, b, a = pixels[x, y]
-            if a > 20 and is_checker_scrub_tone(r, g, b):
+    passes = 0
+    changed = True
+    while changed and (max_passes is None or passes < max_passes):
+        changed = False
+        passes += 1
+        to_clear: list[tuple[int, int]] = []
+        for y in range(height):
+            for x in range(width):
+                r, g, b, a = pixels[x, y]
+                if a < 20 or not predicate(r, g, b):
+                    continue
+                for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                    if nx < 0 or ny < 0 or nx >= width or ny >= height:
+                        continue
+                    if pixels[nx, ny][3] < 20:
+                        to_clear.append((x, y))
+                        break
+        if to_clear:
+            changed = True
+            for x, y in to_clear:
                 pixels[x, y] = (0, 0, 0, 0)
     return rgba
+
+
+def scrub_warm_halo_pixels_adjacent_to_transparent(rgba: Image.Image) -> Image.Image:
+    return scrub_pixels_adjacent_to_transparent(rgba, is_warm_halo_tone, max_passes=2)
 
 
 def remove_checkerboard_background(image: Image.Image) -> Image.Image:
@@ -272,6 +316,27 @@ def remove_checkerboard_background(image: Image.Image) -> Image.Image:
         lambda r, g, b, a: a < 20 or is_checker_flood_tone(r, g, b),
     )
     scrub_checkerboard_pixels(rgba)
+    scrub_warm_halo_pixels_adjacent_to_transparent(rgba)
+    return rgba
+
+
+def remove_dark_edge_background(image: Image.Image) -> Image.Image:
+    """Remove black GPT backgrounds connected to the image edge."""
+    rgba = image.convert("RGBA")
+    flood_fill_background(
+        rgba,
+        lambda r, g, b, a: is_background_pixel(r, g, b, a, "dark"),
+    )
+    return rgba
+
+
+def remove_speckled_edge_background(image: Image.Image) -> Image.Image:
+    """Remove white speckle noise left on black GPT exports."""
+    rgba = image.convert("RGBA")
+    flood_fill_background(
+        rgba,
+        lambda r, g, b, a: is_speckle_background_pixel(r, g, b, a),
+    )
     return rgba
 
 
@@ -287,9 +352,12 @@ def remove_solid_background(image: Image.Image, mode: str | None = None) -> Imag
     return flood_fill_background(rgba, predicate)
 
 
-def trim_crop(crop: Image.Image, source_name: str = "") -> Image.Image:
+def trim_crop(crop: Image.Image, source_name: str = "", quadrant: str = "") -> Image.Image:
     if source_name in CHECKERBOARD_SHEETS:
         crop = remove_checkerboard_background(crop)
+        if quadrant == "br":
+            crop = remove_dark_edge_background(crop)
+            crop = remove_speckled_edge_background(crop)
     else:
         crop = remove_solid_background(crop)
     alpha = crop.split()[-1]
@@ -326,7 +394,7 @@ def extract_all() -> list[MonsterCrop]:
             if path.name in BLOB_SHEETS:
                 image = raw
             else:
-                image = trim_crop(raw, path.name)
+                image = trim_crop(raw, path.name, quadrant)
             rgb = image.convert("RGB")
             crops.append(
                 MonsterCrop(
