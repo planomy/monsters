@@ -3,6 +3,7 @@ export interface Student {
   name: string
   tally: number
   monsterIndex: number
+  absent: boolean
 }
 
 export interface AppState {

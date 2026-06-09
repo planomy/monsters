@@ -12,11 +12,15 @@ const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
 interface HeaderProps {
   state: AppState
   totalTallies: number
+  presentCount: number
+  absentCount: number
   saveStatus: 'saved' | 'saving' | 'idle'
   canUndo: boolean
   onClassNameChange: (name: string) => void
   onSave: () => void
   onRewardAll: () => void
+  onPickStudent: () => void
+  onShuffleOrder: () => void
   onUndo: () => void
   onResetTallies: () => void
   onResetAll: () => void
@@ -39,11 +43,15 @@ function GearIcon() {
 export function Header({
   state,
   totalTallies,
+  presentCount,
+  absentCount,
   saveStatus,
   canUndo,
   onClassNameChange,
   onSave,
   onRewardAll,
+  onPickStudent,
+  onShuffleOrder,
   onUndo,
   onResetTallies,
   onResetAll,
@@ -115,12 +123,26 @@ export function Header({
 
         <div className="header__chips" aria-label="Class summary">
           <span className="header__chip">
-            <strong>{state.students.length}</strong> students
+            <strong>{presentCount}</strong> present
           </span>
+          {absentCount > 0 && (
+            <span className="header__chip">
+              <strong>{absentCount}</strong> away
+            </span>
+          )}
           <span className="header__chip header__chip--tally">
             <strong>{totalTallies}</strong> tallies
           </span>
         </div>
+
+        <button
+          type="button"
+          className="header__pick"
+          onClick={onPickStudent}
+          disabled={presentCount === 0}
+        >
+          PICK
+        </button>
 
         <button type="button" className="header__reward" onClick={onRewardAll}>
           REWARD ALL
@@ -160,6 +182,31 @@ export function Header({
                   ))}
                 </div>
               </div>
+              <div className="header__menu-divider" role="separator" />
+              <button
+                type="button"
+                className="header__menu-item"
+                role="menuitem"
+                onClick={() => {
+                  onPickStudent()
+                  closeMenu()
+                }}
+                disabled={presentCount === 0}
+              >
+                Pick random student
+              </button>
+              <button
+                type="button"
+                className="header__menu-item"
+                role="menuitem"
+                onClick={() => {
+                  onShuffleOrder()
+                  closeMenu()
+                }}
+                disabled={presentCount === 0}
+              >
+                Shuffle class order
+              </button>
               <div className="header__menu-divider" role="separator" />
               <button
                 type="button"

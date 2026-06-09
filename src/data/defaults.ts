@@ -15,5 +15,6 @@ export function createDefaultStudents(): Student[] {
     name,
     tally: 0,
     monsterIndex: index + 1,
+    absent: false,
   }))
 }

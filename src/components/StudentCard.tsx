@@ -10,12 +10,21 @@ import { MonsterAvatar } from './MonsterAvatar'
 
 interface StudentCardProps {
   student: Student
+  highlighted?: boolean
   onIncrement: (id: string) => void
   onDecrement: (id: string) => void
   onRename: (id: string, name: string) => void
+  onToggleAbsent: (id: string) => void
 }
 
-export function StudentCard({ student, onIncrement, onDecrement, onRename }: StudentCardProps) {
+export function StudentCard({
+  student,
+  highlighted = false,
+  onIncrement,
+  onDecrement,
+  onRename,
+  onToggleAbsent,
+}: StudentCardProps) {
   const [editing, setEditing] = useState(false)
   const [celebration, setCelebration] = useState<CelebrationVariant | null>(null)
   const [draftName, setDraftName] = useState(student.name)
@@ -54,22 +63,45 @@ export function StudentCard({ student, onIncrement, onDecrement, onRename }: Stu
     setEditing(false)
   }
 
-  const cardClass = celebration
-    ? `student-card student-card--celebrate student-card--${celebration}`
-    : 'student-card'
+  const cardClass = [
+    'student-card',
+    celebration && `student-card--celebrate student-card--${celebration}`,
+    student.absent && 'student-card--absent',
+    highlighted && 'student-card--highlighted',
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   const sparkles = celebration ? CELEBRATION_SPARKLES[celebration] : null
 
   return (
     <article
+      id={`student-${student.id}`}
       className={cardClass}
       onClick={handleClick}
       onContextMenu={(e) => {
         e.preventDefault()
         onDecrement(student.id)
       }}
-      title="Click to +1 · Shift+click or right-click to −1 · Double-click name to edit"
+      title="Click to +1 · Shift+click or right-click to −1 · Double-click name to edit · Away toggles absence"
     >
+      <button
+        type="button"
+        className={
+          student.absent
+            ? 'student-card__absent student-card__absent--on'
+            : 'student-card__absent'
+        }
+        onClick={(e) => {
+          e.stopPropagation()
+          onToggleAbsent(student.id)
+        }}
+        aria-pressed={student.absent}
+        aria-label={student.absent ? `Mark ${student.name} present` : `Mark ${student.name} away`}
+      >
+        {student.absent ? 'Back' : 'Away'}
+      </button>
+
       <div className="student-card__tally" aria-label={`${student.tally} points`}>
         {student.tally}
       </div>

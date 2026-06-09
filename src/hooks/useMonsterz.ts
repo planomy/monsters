@@ -1,14 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createDefaultStudents } from '../data/defaults'
-import type { AppState, HistoryEntry } from '../types'
+import type { AppState, HistoryEntry, Student } from '../types'
 import { importFromJson } from '../utils/export'
+import { shuffle } from '../utils/random'
 import { loadState, saveState } from '../utils/storage'
+
+function presentStudents(students: Student[]) {
+  return students.filter((s) => !s.absent)
+}
 
 export function useMonsterz() {
   const [state, setState] = useState<AppState>(() => loadState())
   const [history, setHistory] = useState<HistoryEntry[]>([])
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'idle'>('idle')
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pickerPoolRef = useRef<string[]>([])
 
   const persist = useCallback((next: AppState) => {
     setSaveStatus('saving')
@@ -151,6 +157,7 @@ export function useMonsterz() {
     const saved = saveState(next)
     setState(saved)
     setHistory([])
+    pickerPoolRef.current = []
     setSaveStatus('saved')
   }, [])
 
@@ -165,8 +172,53 @@ export function useMonsterz() {
     const saved = saveState(imported)
     setState(saved)
     setHistory([])
+    pickerPoolRef.current = []
     setSaveStatus('saved')
   }, [])
+
+  const toggleAbsent = useCallback(
+    (studentId: string) => {
+      updateState((prev) => ({
+        ...prev,
+        students: prev.students.map((s) =>
+          s.id === studentId ? { ...s, absent: !s.absent } : s,
+        ),
+      }))
+      pickerPoolRef.current = pickerPoolRef.current.filter((id) => id !== studentId)
+    },
+    [updateState],
+  )
+
+  const pickRandomStudent = useCallback((): {
+    student: Student | null
+    remaining: number
+    cycleSize: number
+  } => {
+    const present = presentStudents(state.students)
+    const cycleSize = present.length
+    if (!cycleSize) {
+      return { student: null, remaining: 0, cycleSize: 0 }
+    }
+
+    const presentIds = new Set(present.map((s) => s.id))
+    let pool = pickerPoolRef.current.filter((id) => presentIds.has(id))
+    if (!pool.length) {
+      pool = shuffle(present.map((s) => s.id))
+    }
+
+    const pickedId = pool[0]
+    pickerPoolRef.current = pool.slice(1)
+    const student = state.students.find((s) => s.id === pickedId) ?? null
+    return { student, remaining: pickerPoolRef.current.length, cycleSize }
+  }, [state.students])
+
+  const resetPickerCycle = useCallback(() => {
+    pickerPoolRef.current = []
+  }, [])
+
+  const shuffleClassOrder = useCallback((): Student[] => {
+    return shuffle(presentStudents(state.students))
+  }, [state.students])
 
   useEffect(() => {
     return () => {
@@ -175,12 +227,16 @@ export function useMonsterz() {
   }, [])
 
   const totalTallies = state.students.reduce((sum, s) => sum + s.tally, 0)
+  const presentCount = presentStudents(state.students).length
+  const absentCount = state.students.length - presentCount
 
   return {
     state,
     saveStatus,
     history,
     totalTallies,
+    presentCount,
+    absentCount,
     incrementTally,
     decrementTally,
     rewardAll,
@@ -191,5 +247,9 @@ export function useMonsterz() {
     resetToDefaults,
     manualSave,
     importState,
+    toggleAbsent,
+    pickRandomStudent,
+    resetPickerCycle,
+    shuffleClassOrder,
   }
 }

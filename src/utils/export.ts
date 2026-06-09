@@ -1,4 +1,5 @@
-import type { AppState } from '../types'
+import type { AppState, Student } from '../types'
+import { normalizeState } from './normalize'
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob)
@@ -20,11 +21,12 @@ export function exportToJson(state: AppState) {
   const payload = {
     exportedAt: new Date().toISOString(),
     className: state.className,
-    students: state.students.map(({ id, name, tally, monsterIndex }) => ({
+    students: state.students.map(({ id, name, tally, monsterIndex, absent }) => ({
       id,
       name,
       tally,
       monsterIndex,
+      absent,
     })),
     totalTallies: state.students.reduce((sum, s) => sum + s.tally, 0),
   }
@@ -48,21 +50,16 @@ export async function importFromJson(file: File): Promise<AppState> {
   const text = await file.text()
   const parsed = JSON.parse(text) as {
     className?: string
-    students?: Array<{
-      id: string
-      name: string
-      tally: number
-      monsterIndex: number
-    }>
+    students?: Student[]
   }
 
   if (!parsed.students?.length) {
     throw new Error('Invalid file: no student data found.')
   }
 
-  return {
+  return normalizeState({
     className: parsed.className ?? 'My Class',
     students: parsed.students,
     lastSaved: new Date().toISOString(),
-  }
+  })
 }

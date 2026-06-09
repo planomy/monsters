@@ -1,5 +1,6 @@
 import { createDefaultStudents } from '../data/defaults'
 import type { AppState } from '../types'
+import { normalizeState } from './normalize'
 
 const STORAGE_KEY = 'monsterz-app-state'
 const STORAGE_VERSION = 1
@@ -29,7 +30,7 @@ export function loadState(): AppState {
       }
     }
 
-    return parsed.state
+    return normalizeState(parsed.state)
   } catch {
     return {
       students: createDefaultStudents(),
