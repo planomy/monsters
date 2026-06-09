@@ -10,11 +10,14 @@ const MONSTER_COLORS = [
   '#8b5cf6', '#a78bfa', '#7e22ce', '#581c87', '#4c1d95',
 ]
 
+// Bump when monster PNGs change — Safari caches image URLs aggressively.
+const MONSTER_ASSET_VERSION = '2'
+
 export function MonsterAvatar({ index, name }: MonsterAvatarProps) {
   const [imgError, setImgError] = useState(false)
   const color = MONSTER_COLORS[index % MONSTER_COLORS.length]
   const initial = name.trim().charAt(0).toUpperCase() || '?'
-  const src = `${import.meta.env.BASE_URL}monsters/${String(index).padStart(2, '0')}.png`
+  const src = `${import.meta.env.BASE_URL}monsters/${String(index).padStart(2, '0')}.png?v=${MONSTER_ASSET_VERSION}`
 
   if (!imgError) {
     return (
