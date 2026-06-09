@@ -2,7 +2,7 @@
 
 A classroom tally tracker inspired by ClassDojo — reward students for moments like turning on their camera to greet you in the morning.
 
-**Live site:** [planomy.github.io/monsterz](https://planomy.github.io/monsterz)
+**Live site:** [planomy.github.io/monsters](https://planomy.github.io/monsters)
 
 ## Features
 
@@ -43,7 +43,7 @@ npm run dev
 
 The built site lives in `/docs` on `main` (no GitHub Actions required).
 
-1. Push to `planomy/monsterz` on branch `main`
+1. Push to `planomy/monsters` on branch `main`
 2. In repo **Settings → Pages**, set source to **Deploy from branch**
 3. Choose branch `main`, folder `/docs`
 
