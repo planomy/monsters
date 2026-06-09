@@ -1,0 +1,149 @@
+{
+  "total_extracted": 35,
+  "unique_count": 30,
+  "target_count": 30,
+  "removed": [
+    {
+      "source": "image-549bd4ab-17b7-4806-b27e-8a3e56221630.png:br",
+      "reason": "manual: Blue water shark (dup of anglerfish)"
+    },
+    {
+      "source": "image-9b67f94d-e520-4e5b-8cf4-f4de7d87a3c9.png:bl",
+      "reason": "manual: Green slime stalks (dup of lollipop slime)"
+    },
+    {
+      "source": "image-a8388ef2-24bc-49b6-a36f-3dcd8d262d83.png:br",
+      "reason": "manual: Purple crystal (dup of candy crystal)"
+    },
+    {
+      "source": "image-cd840fdb-1ef7-4ce2-af91-ee626eabe761.png:tl",
+      "reason": "manual: Green cyclops wave (lazy recolor of pink cyclops)"
+    },
+    {
+      "source": "image-cd840fdb-1ef7-4ce2-af91-ee626eabe761.png:tr",
+      "reason": "manual: Blue 3-eye furry (dup of teal 3-eye dragon)"
+    }
+  ],
+  "monsters": [
+    {
+      "slot": "01",
+      "source": "image-23a970c9-fbf0-471e-868c-b6e48cef5624.png:tl"
+    },
+    {
+      "slot": "02",
+      "source": "image-23a970c9-fbf0-471e-868c-b6e48cef5624.png:tr"
+    },
+    {
+      "slot": "03",
+      "source": "image-23a970c9-fbf0-471e-868c-b6e48cef5624.png:bl"
+    },
+    {
+      "slot": "04",
+      "source": "image-23a970c9-fbf0-471e-868c-b6e48cef5624.png:br"
+    },
+    {
+      "slot": "05",
+      "source": "image-360c55a2-933e-414e-9e63-f778b9981991.png:tl"
+    },
+    {
+      "slot": "06",
+      "source": "image-360c55a2-933e-414e-9e63-f778b9981991.png:tr"
+    },
+    {
+      "slot": "07",
+      "source": "image-360c55a2-933e-414e-9e63-f778b9981991.png:bl"
+    },
+    {
+      "slot": "08",
+      "source": "image-360c55a2-933e-414e-9e63-f778b9981991.png:br"
+    },
+    {
+      "slot": "09",
+      "source": "image-549bd4ab-17b7-4806-b27e-8a3e56221630.png:tl"
+    },
+    {
+      "slot": "10",
+      "source": "image-549bd4ab-17b7-4806-b27e-8a3e56221630.png:tr"
+    },
+    {
+      "slot": "11",
+      "source": "image-549bd4ab-17b7-4806-b27e-8a3e56221630.png:bl"
+    },
+    {
+      "slot": "12",
+      "source": "image-6b763295-6e99-4d89-bd69-5acdf75c66c9.png:tl"
+    },
+    {
+      "slot": "13",
+      "source": "image-6b763295-6e99-4d89-bd69-5acdf75c66c9.png:tr"
+    },
+    {
+      "slot": "14",
+      "source": "image-6b763295-6e99-4d89-bd69-5acdf75c66c9.png:bl"
+    },
+    {
+      "slot": "15",
+      "source": "image-6b763295-6e99-4d89-bd69-5acdf75c66c9.png:br"
+    },
+    {
+      "slot": "16",
+      "source": "image-9b67f94d-e520-4e5b-8cf4-f4de7d87a3c9.png:tl"
+    },
+    {
+      "slot": "17",
+      "source": "image-9b67f94d-e520-4e5b-8cf4-f4de7d87a3c9.png:tr"
+    },
+    {
+      "slot": "18",
+      "source": "image-9b67f94d-e520-4e5b-8cf4-f4de7d87a3c9.png:br"
+    },
+    {
+      "slot": "19",
+      "source": "image-a1749ad2-0cae-4454-ae3f-89de3f936f5d.png:tl"
+    },
+    {
+      "slot": "20",
+      "source": "image-a1749ad2-0cae-4454-ae3f-89de3f936f5d.png:tr"
+    },
+    {
+      "slot": "21",
+      "source": "image-a1749ad2-0cae-4454-ae3f-89de3f936f5d.png:bl"
+    },
+    {
+      "slot": "22",
+      "source": "image-a1749ad2-0cae-4454-ae3f-89de3f936f5d.png:br"
+    },
+    {
+      "slot": "23",
+      "source": "image-a8388ef2-24bc-49b6-a36f-3dcd8d262d83.png:tl"
+    },
+    {
+      "slot": "24",
+      "source": "image-a8388ef2-24bc-49b6-a36f-3dcd8d262d83.png:tr"
+    },
+    {
+      "slot": "25",
+      "source": "image-a8388ef2-24bc-49b6-a36f-3dcd8d262d83.png:bl"
+    },
+    {
+      "slot": "26",
+      "source": "image-cd840fdb-1ef7-4ce2-af91-ee626eabe761.png:bl"
+    },
+    {
+      "slot": "27",
+      "source": "image-cd840fdb-1ef7-4ce2-af91-ee626eabe761.png:br"
+    },
+    {
+      "slot": "28",
+      "source": "image-03cff508-0f9a-43a1-b0d2-5533eb6bdf90.png:m1"
+    },
+    {
+      "slot": "29",
+      "source": "image-03cff508-0f9a-43a1-b0d2-5533eb6bdf90.png:m2"
+    },
+    {
+      "slot": "30",
+      "source": "image-03cff508-0f9a-43a1-b0d2-5533eb6bdf90.png:m3"
+    }
+  ]
+}
