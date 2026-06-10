@@ -501,12 +501,18 @@
   letter-spacing: 0.03em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+  opacity: 0.5;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease,
+    opacity 0.12s ease;
 }
 
 .student-card__absent:hover {
   border-color: var(--purple);
   color: var(--purple);
+  opacity: 0.85;
 }
 
 .student-card__absent--on {
