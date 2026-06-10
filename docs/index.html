@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
     <title>Monsterz</title>
+    <script src="/monsters/gradient-boot.js"></script>
     <script>
       (function () {
         var pref = localStorage.getItem('monsterz-theme') || 'system';
@@ -19,37 +20,18 @@
         document.documentElement.dataset.theme = dark ? 'dark' : 'light';
         document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
         if (dark) {
-          var gradients = {
-            eggplant:
-              'linear-gradient(145deg, #1a0a2e 0%, #3b1d5c 38%, #160820 72%, #050208 100%)',
-            'royal-plum':
-              'linear-gradient(160deg, #2e1065 0%, #4c1d95 42%, #1e0a3a 100%)',
-            'midnight-violet':
-              'linear-gradient(180deg, #0f0520 0%, #1a1035 45%, #09040f 100%)',
-            cosmic:
-              'linear-gradient(135deg, #1e1b4b 0%, #4c1d95 50%, #0c0618 100%)',
-            aubergine:
-              'linear-gradient(125deg, #2a1235 0%, #5b2d6e 40%, #140818 100%)',
-            'shadow-grape':
-              'linear-gradient(165deg, #12081c 0%, #32204a 55%, #08040e 100%)',
-            twilight:
-              'linear-gradient(200deg, #1a0f2e 0%, #312e81 48%, #0a0612 100%)',
-            'ink-orchid':
-              'linear-gradient(145deg, #0c0614 0%, #581c87 35%, #1a0a28 70%, #030106 100%)',
-            'smoky-amethyst':
-              'linear-gradient(170deg, #18101f 0%, #3f2d56 50%, #0d0812 100%)',
-            'violet-dusk':
-              'linear-gradient(135deg, #2d1b69 0%, #6d28d9 30%, #1a0a2e 65%, #050208 100%)',
-          };
+          var gradients = window.__MONSTERZ_GRADIENT_BOOT__ || {};
           var gradientId = localStorage.getItem('monsterz-gradient') || 'eggplant';
           var css = gradients[gradientId] || gradients.eggplant;
-          document.documentElement.dataset.gradient = gradientId;
-          document.documentElement.style.setProperty('--app-gradient', css);
+          if (css) {
+            document.documentElement.dataset.gradient = gradientId;
+            document.documentElement.style.setProperty('--app-gradient', css);
+          }
         }
       })();
     </script>
-    <script type="module" crossorigin src="/monsters/assets/index-BEonSPCo.js"></script>
-    <link rel="stylesheet" crossorigin href="/monsters/assets/index-DmI68Zg1.css">
+    <script type="module" crossorigin src="/monsters/assets/index-BIOfE-t5.js"></script>
+    <link rel="stylesheet" crossorigin href="/monsters/assets/index-CqKIIivz.css">
   </head>
   <body>
     <div id="root"></div>

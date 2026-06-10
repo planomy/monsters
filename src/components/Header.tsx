@@ -191,7 +191,7 @@ export function Header({
               </div>
               <div className="header__gradients" role="group" aria-label="Dark mode background">
                 <span className="header__theme-label">
-                  Dark gradient{themeResolved === 'light' ? ' (dark mode)' : ''}
+                  Background{themeResolved === 'light' ? ' (dark mode)' : ''}
                 </span>
                 <div className="header__gradient-grid">
                   {DARK_GRADIENTS.map((gradient) => (

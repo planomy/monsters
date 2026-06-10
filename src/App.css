@@ -1160,6 +1160,9 @@
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 0.35rem;
+  max-height: 9.5rem;
+  overflow-y: auto;
+  padding-right: 0.15rem;
 }
 
 .header__gradient-swatch {
