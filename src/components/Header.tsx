@@ -3,6 +3,10 @@ import { DARK_GRADIENTS } from '../data/gradients'
 import type { ThemePreference } from '../hooks/useTheme'
 import type { AppState } from '../types'
 import { exportToCsv, exportToJson } from '../utils/export'
+import { activateEmbeddedStorage } from '../utils/storage'
+import { ConfirmModal } from './ConfirmModal'
+
+type ConfirmAction = 'reset-tallies' | 'reset-all'
 
 const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
   { value: 'light', label: 'Light' },
@@ -69,6 +73,7 @@ export function Header({
   const fileRef = useRef<HTMLInputElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
 
   const saveLabel =
     saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved' : 'Save'
@@ -104,6 +109,20 @@ export function Header({
   }, [menuOpen])
 
   const closeMenu = () => setMenuOpen(false)
+
+  const openMenu = () => {
+    void activateEmbeddedStorage()
+    setMenuOpen((open) => !open)
+  }
+
+  const runConfirmedAction = () => {
+    void activateEmbeddedStorage().finally(() => {
+      if (confirmAction === 'reset-tallies') onResetTallies()
+      if (confirmAction === 'reset-all') onResetAll()
+      setConfirmAction(null)
+      closeMenu()
+    })
+  }
 
   return (
     <header className="header">
@@ -159,7 +178,7 @@ export function Header({
           <button
             type="button"
             className="header__gear"
-            onClick={() => setMenuOpen((open) => !open)}
+            onClick={openMenu}
             aria-label="Settings and tools"
             aria-expanded={menuOpen}
             aria-haspopup="menu"
@@ -309,13 +328,7 @@ export function Header({
                 type="button"
                 className="header__menu-item header__menu-item--danger"
                 role="menuitem"
-                onClick={() => {
-                  const confirmed = window.confirm(
-                    'Reset all tallies to zero? Names and monsters will be kept.',
-                  )
-                  if (confirmed) onResetTallies()
-                  closeMenu()
-                }}
+                onClick={() => setConfirmAction('reset-tallies')}
               >
                 Reset tallies
               </button>
@@ -323,16 +336,7 @@ export function Header({
                 type="button"
                 className="header__menu-item header__menu-item--danger"
                 role="menuitem"
-                onClick={() => {
-                  if (
-                    window.confirm(
-                      'Reset everything to defaults? This clears all names, tallies, and class name.',
-                    )
-                  ) {
-                    onResetAll()
-                  }
-                  closeMenu()
-                }}
+                onClick={() => setConfirmAction('reset-all')}
               >
                 Reset all
               </button>
@@ -343,6 +347,26 @@ export function Header({
           )}
         </div>
       </div>
+
+      {confirmAction === 'reset-tallies' && (
+        <ConfirmModal
+          title="Reset tallies?"
+          message="Set every student back to zero. Names and monsters stay the same."
+          confirmLabel="Reset tallies"
+          onConfirm={runConfirmedAction}
+          onCancel={() => setConfirmAction(null)}
+        />
+      )}
+
+      {confirmAction === 'reset-all' && (
+        <ConfirmModal
+          title="Reset everything?"
+          message="Clear all names, tallies, and class name back to defaults. This cannot be undone."
+          confirmLabel="Reset all"
+          onConfirm={runConfirmedAction}
+          onCancel={() => setConfirmAction(null)}
+        />
+      )}
     </header>
   )
 }

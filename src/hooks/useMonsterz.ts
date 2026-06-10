@@ -3,7 +3,7 @@ import { createDefaultStudents } from '../data/defaults'
 import type { AppState, HistoryEntry, Student } from '../types'
 import { importFromJson } from '../utils/export'
 import { shuffle } from '../utils/random'
-import { loadState, saveState } from '../utils/storage'
+import { activateEmbeddedStorage, loadState, saveState } from '../utils/storage'
 
 function presentStudents(students: Student[]) {
   return students.filter((s) => !s.absent)
@@ -21,10 +21,16 @@ export function useMonsterz() {
       clearTimeout(saveTimer.current)
       saveTimer.current = null
     }
-    const saved = saveState(next)
-    setState(saved)
-    setSaveStatus('saved')
-    return saved
+    try {
+      const saved = saveState(next)
+      setState(saved)
+      setSaveStatus('saved')
+      return saved
+    } catch {
+      setState(next)
+      setSaveStatus('idle')
+      return next
+    }
   }, [])
 
   const persist = useCallback(
@@ -154,6 +160,7 @@ export function useMonsterz() {
   )
 
   const resetAllTallies = useCallback(() => {
+    void activateEmbeddedStorage()
     let next!: AppState
     setState((prev) => {
       next = {

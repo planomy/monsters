@@ -5,14 +5,134 @@ import { normalizeState } from './normalize'
 const STORAGE_KEY = 'monsterz-app-state'
 const STORAGE_VERSION = 1
 
+export type StorageMode = 'local' | 'session' | 'memory'
+
 interface StoredPayload {
   version: number
   state: AppState
 }
 
+let memoryFallback: string | null = null
+let storageMode: StorageMode = 'local'
+let unpartitionedStorage: Storage | null = null
+
+export function isEmbedded(): boolean {
+  try {
+    return window.self !== window.top
+  } catch {
+    return true
+  }
+}
+
+export function getStorageMode(): StorageMode {
+  return storageMode
+}
+
+function activeStorage(): Storage | null {
+  if (unpartitionedStorage) return unpartitionedStorage
+  try {
+    return localStorage
+  } catch {
+    return null
+  }
+}
+
+function readRaw(): string | null {
+  const local = activeStorage()
+  if (local) {
+    try {
+      const value = local.getItem(STORAGE_KEY)
+      if (value) {
+        storageMode = 'local'
+        return value
+      }
+    } catch {
+      /* fall through */
+    }
+  }
+
+  try {
+    const value = sessionStorage.getItem(STORAGE_KEY)
+    if (value) {
+      storageMode = 'session'
+      return value
+    }
+  } catch {
+    /* fall through */
+  }
+
+  return memoryFallback
+}
+
+function writeRaw(value: string): boolean {
+  const local = activeStorage()
+  if (local) {
+    try {
+      local.setItem(STORAGE_KEY, value)
+      storageMode = 'local'
+      return true
+    } catch {
+      /* fall through */
+    }
+  }
+
+  try {
+    sessionStorage.setItem(STORAGE_KEY, value)
+    storageMode = 'session'
+    return true
+  } catch {
+    /* fall through */
+  }
+
+  memoryFallback = value
+  storageMode = 'memory'
+  return true
+}
+
+/** Request unpartitioned storage when embedded (needs a user click). */
+export async function activateEmbeddedStorage(): Promise<boolean> {
+  if (!isEmbedded()) return true
+
+  const doc = document as Document & {
+    hasStorageAccess?: () => Promise<boolean>
+    requestStorageAccess?: (options?: { localStorage?: boolean }) => Promise<{
+      localStorage?: Storage
+    }>
+  }
+
+  try {
+    if (doc.hasStorageAccess && (await doc.hasStorageAccess())) {
+      return true
+    }
+  } catch {
+    /* continue */
+  }
+
+  if (!doc.requestStorageAccess) {
+    return activeStorage() !== null
+  }
+
+  try {
+    const handle = await doc.requestStorageAccess({ localStorage: true })
+    if (handle?.localStorage) {
+      unpartitionedStorage = handle.localStorage
+      if (memoryFallback) {
+        handle.localStorage.setItem(STORAGE_KEY, memoryFallback)
+        memoryFallback = null
+      }
+      storageMode = 'local'
+      return true
+    }
+  } catch {
+    return false
+  }
+
+  return false
+}
+
 export function loadState(): AppState {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = readRaw()
     if (!raw) {
       return {
         students: createDefaultStudents(),
@@ -49,6 +169,6 @@ export function saveState(state: AppState): AppState {
     state: nextState,
   }
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
+  writeRaw(JSON.stringify(payload))
   return nextState
 }

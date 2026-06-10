@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Header } from './components/Header'
 import { PickStudentModal } from './components/PickStudentModal'
 import { ShuffleOrderModal } from './components/ShuffleOrderModal'
@@ -6,6 +6,7 @@ import { StudentGrid } from './components/StudentGrid'
 import { useMonsterz } from './hooks/useMonsterz'
 import { useTheme } from './hooks/useTheme'
 import type { Student } from './types'
+import { isEmbedded } from './utils/storage'
 import './App.css'
 
 interface PickModalState {
@@ -48,6 +49,11 @@ function App() {
   const [pickModal, setPickModal] = useState<PickModalState | null>(null)
   const [shuffleStudents, setShuffleStudents] = useState<Student[] | null>(null)
   const [highlightedStudentId, setHighlightedStudentId] = useState<string | null>(null)
+  const [embedded, setEmbedded] = useState(false)
+
+  useEffect(() => {
+    setEmbedded(isEmbedded())
+  }, [])
 
   const highlightStudent = useCallback((studentId: string) => {
     setHighlightedStudentId(studentId)
@@ -109,6 +115,12 @@ function App() {
       />
 
       <main className="app__main">
+        {embedded && (
+          <p className="app__embed-notice">
+            Embedded in your presentation — saves here are separate from opening Monsterz in its own
+            browser tab. Export JSON to back up before class.
+          </p>
+        )}
         <p className="app__hint">
           Tap a card to award a tally · Shift+click or right-click to remove one · Double-click a name to rename · Away marks absent
         </p>
