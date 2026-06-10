@@ -37,7 +37,13 @@ function App() {
     resetPickerCycle,
     shuffleClassOrder,
   } = useMonsterz()
-  const { preference: themePreference, setPreference: setThemePreference } = useTheme()
+  const {
+    preference: themePreference,
+    gradientId,
+    resolved: themeResolved,
+    setPreference: setThemePreference,
+    setGradientId,
+  } = useTheme()
 
   const [pickModal, setPickModal] = useState<PickModalState | null>(null)
   const [shuffleStudents, setShuffleStudents] = useState<Student[] | null>(null)
@@ -96,7 +102,10 @@ function App() {
           })
         }}
         themePreference={themePreference}
+        themeResolved={themeResolved}
+        gradientId={gradientId}
         onThemeChange={setThemePreference}
+        onGradientChange={setGradientId}
       />
 
       <main className="app__main">

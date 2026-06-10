@@ -2,6 +2,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: transparent;
 }
 
 .app__main {
@@ -94,7 +95,8 @@
   top: calc(100% + 0.5rem);
   right: 0;
   z-index: 50;
-  min-width: 200px;
+  min-width: 220px;
+  max-width: min(92vw, 280px);
   padding: 0.4rem;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -417,6 +419,10 @@
 }
 
 /* Student card */
+[data-theme='dark'] .student-card {
+  backdrop-filter: blur(10px);
+}
+
 .student-card {
   position: relative;
   display: grid;
@@ -1144,6 +1150,41 @@
   color: var(--white);
   background: var(--purple);
   box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+}
+
+.header__gradients {
+  padding: 0.5rem 0.65rem 0.35rem;
+}
+
+.header__gradient-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.35rem;
+}
+
+.header__gradient-swatch {
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.header__gradient-swatch:hover {
+  transform: scale(1.06);
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.header__gradient-swatch--active {
+  border-color: var(--purple-light);
+  box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.45);
+}
+
+.header__gradient-swatch:focus-visible {
+  outline: 2px solid var(--purple-light);
+  outline-offset: 2px;
 }
 
 /* Monster avatar */

@@ -16,16 +16,29 @@ export function useMonsterz() {
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pickerPoolRef = useRef<string[]>([])
 
-  const persist = useCallback((next: AppState) => {
-    setSaveStatus('saving')
-    if (saveTimer.current) clearTimeout(saveTimer.current)
-
-    saveTimer.current = setTimeout(() => {
-      const saved = saveState(next)
-      setState(saved)
-      setSaveStatus('saved')
-    }, 400)
+  const commitSave = useCallback((next: AppState) => {
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current)
+      saveTimer.current = null
+    }
+    const saved = saveState(next)
+    setState(saved)
+    setSaveStatus('saved')
+    return saved
   }, [])
+
+  const persist = useCallback(
+    (next: AppState) => {
+      setSaveStatus('saving')
+      if (saveTimer.current) clearTimeout(saveTimer.current)
+
+      saveTimer.current = setTimeout(() => {
+        saveTimer.current = null
+        commitSave(next)
+      }, 400)
+    },
+    [commitSave],
+  )
 
   const updateState = useCallback(
     (updater: (prev: AppState) => AppState) => {
@@ -141,12 +154,17 @@ export function useMonsterz() {
   )
 
   const resetAllTallies = useCallback(() => {
-    updateState((prev) => ({
-      ...prev,
-      students: prev.students.map((s) => ({ ...s, tally: 0 })),
-    }))
+    let next!: AppState
+    setState((prev) => {
+      next = {
+        ...prev,
+        students: prev.students.map((s) => ({ ...s, tally: 0 })),
+      }
+      return next
+    })
+    commitSave(next)
     setHistory([])
-  }, [updateState])
+  }, [commitSave])
 
   const resetToDefaults = useCallback(() => {
     const next: AppState = {
@@ -154,27 +172,24 @@ export function useMonsterz() {
       students: createDefaultStudents(),
       lastSaved: null,
     }
-    const saved = saveState(next)
-    setState(saved)
+    commitSave(next)
     setHistory([])
     pickerPoolRef.current = []
-    setSaveStatus('saved')
-  }, [])
+  }, [commitSave])
 
   const manualSave = useCallback(() => {
-    const saved = saveState(state)
-    setState(saved)
-    setSaveStatus('saved')
-  }, [state])
+    commitSave(state)
+  }, [commitSave, state])
 
-  const importState = useCallback(async (file: File) => {
-    const imported = await importFromJson(file)
-    const saved = saveState(imported)
-    setState(saved)
-    setHistory([])
-    pickerPoolRef.current = []
-    setSaveStatus('saved')
-  }, [])
+  const importState = useCallback(
+    async (file: File) => {
+      const imported = await importFromJson(file)
+      commitSave(imported)
+      setHistory([])
+      pickerPoolRef.current = []
+    },
+    [commitSave],
+  )
 
   const toggleAbsent = useCallback(
     (studentId: string) => {

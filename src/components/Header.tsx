@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { DARK_GRADIENTS } from '../data/gradients'
 import type { ThemePreference } from '../hooks/useTheme'
 import type { AppState } from '../types'
 import { exportToCsv, exportToJson } from '../utils/export'
@@ -26,7 +27,10 @@ interface HeaderProps {
   onResetAll: () => void
   onImport: (file: File) => void
   themePreference: ThemePreference
+  themeResolved: 'light' | 'dark'
+  gradientId: string
   onThemeChange: (theme: ThemePreference) => void
+  onGradientChange: (gradientId: string) => void
 }
 
 function GearIcon() {
@@ -57,7 +61,10 @@ export function Header({
   onResetAll,
   onImport,
   themePreference,
+  themeResolved,
+  gradientId,
   onThemeChange,
+  onGradientChange,
 }: HeaderProps) {
   const fileRef = useRef<HTMLInputElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -182,6 +189,29 @@ export function Header({
                   ))}
                 </div>
               </div>
+              <div className="header__gradients" role="group" aria-label="Dark mode background">
+                <span className="header__theme-label">
+                  Dark gradient{themeResolved === 'light' ? ' (dark mode)' : ''}
+                </span>
+                <div className="header__gradient-grid">
+                  {DARK_GRADIENTS.map((gradient) => (
+                    <button
+                      key={gradient.id}
+                      type="button"
+                      className={
+                        gradientId === gradient.id
+                          ? 'header__gradient-swatch header__gradient-swatch--active'
+                          : 'header__gradient-swatch'
+                      }
+                      style={{ background: gradient.css }}
+                      title={gradient.name}
+                      aria-label={gradient.name}
+                      aria-pressed={gradientId === gradient.id}
+                      onClick={() => onGradientChange(gradient.id)}
+                    />
+                  ))}
+                </div>
+              </div>
               <div className="header__menu-divider" role="separator" />
               <button
                 type="button"
@@ -280,9 +310,10 @@ export function Header({
                 className="header__menu-item header__menu-item--danger"
                 role="menuitem"
                 onClick={() => {
-                  if (window.confirm('Reset all tallies to zero? Names and monsters will be kept.')) {
-                    onResetTallies()
-                  }
+                  const confirmed = window.confirm(
+                    'Reset all tallies to zero? Names and monsters will be kept.',
+                  )
+                  if (confirmed) onResetTallies()
                   closeMenu()
                 }}
               >

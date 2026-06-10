@@ -24,8 +24,15 @@
 }
 
 [data-theme='dark'] {
-  --bg: #0a0a0a;
-  --card-bg: #16121f;
+  --bg: #0a0612;
+  --app-gradient: linear-gradient(
+    145deg,
+    #1a0a2e 0%,
+    #3b1d5c 38%,
+    #160820 72%,
+    #050208 100%
+  );
+  --card-bg: rgba(22, 18, 31, 0.88);
   --text: #f4f0fa;
   --text-muted: #a1a1aa;
   --border: #2e2640;
@@ -43,10 +50,19 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background-color: var(--bg);
 }
 
 #root {
   min-height: 100vh;
+  background-color: inherit;
+}
+
+[data-theme='dark'] body,
+[data-theme='dark'] #root {
+  background: var(--app-gradient);
+  background-color: var(--bg);
+  background-attachment: fixed;
 }
 
 .sr-only {
