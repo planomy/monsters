@@ -5,6 +5,7 @@ import { ShuffleOrderModal } from './components/ShuffleOrderModal'
 import { StudentGrid } from './components/StudentGrid'
 import { useMonsterz } from './hooks/useMonsterz'
 import { useTheme } from './hooks/useTheme'
+import { useUiScale } from './hooks/useUiScale'
 import type { Student } from './types'
 import './App.css'
 
@@ -44,6 +45,14 @@ function App() {
     setPreference: setThemePreference,
     setGradientId,
   } = useTheme()
+  const {
+    scaleId: uiScaleId,
+    setScaleId: setUiScaleId,
+    increase: increaseUiScale,
+    decrease: decreaseUiScale,
+    canDecrease: canDecreaseUiScale,
+    canIncrease: canIncreaseUiScale,
+  } = useUiScale()
 
   const [pickModal, setPickModal] = useState<PickModalState | null>(null)
   const [shuffleStudents, setShuffleStudents] = useState<Student[] | null>(null)
@@ -106,6 +115,12 @@ function App() {
         gradientId={gradientId}
         onThemeChange={setThemePreference}
         onGradientChange={setGradientId}
+        uiScaleId={uiScaleId}
+        onUiScaleChange={setUiScaleId}
+        onUiScaleDecrease={decreaseUiScale}
+        onUiScaleIncrease={increaseUiScale}
+        canDecreaseUiScale={canDecreaseUiScale}
+        canIncreaseUiScale={canIncreaseUiScale}
       />
 
       <main className="app__main">

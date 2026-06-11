@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { DARK_GRADIENTS } from '../data/gradients'
 import type { ThemePreference } from '../hooks/useTheme'
+import type { UiScaleId } from '../hooks/useUiScale'
+import { UI_SCALE_OPTIONS } from '../hooks/useUiScale'
 import type { AppState } from '../types'
 import { exportToCsv, exportToJson } from '../utils/export'
 import { activateEmbeddedStorage } from '../utils/storage'
@@ -35,6 +37,12 @@ interface HeaderProps {
   gradientId: string
   onThemeChange: (theme: ThemePreference) => void
   onGradientChange: (gradientId: string) => void
+  uiScaleId: UiScaleId
+  onUiScaleChange: (scaleId: UiScaleId) => void
+  onUiScaleDecrease: () => void
+  onUiScaleIncrease: () => void
+  canDecreaseUiScale: boolean
+  canIncreaseUiScale: boolean
 }
 
 function GearIcon() {
@@ -69,6 +77,12 @@ export function Header({
   gradientId,
   onThemeChange,
   onGradientChange,
+  uiScaleId,
+  onUiScaleChange,
+  onUiScaleDecrease,
+  onUiScaleIncrease,
+  canDecreaseUiScale,
+  canIncreaseUiScale,
 }: HeaderProps) {
   const fileRef = useRef<HTMLInputElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -173,6 +187,45 @@ export function Header({
         <button type="button" className="header__reward" onClick={onRewardAll}>
           REWARD ALL
         </button>
+
+        <div className="header__size" role="group" aria-label="Button size">
+          <button
+            type="button"
+            className="header__size-btn"
+            onClick={onUiScaleDecrease}
+            disabled={!canDecreaseUiScale}
+            aria-label="Smaller buttons"
+          >
+            −
+          </button>
+          <div className="header__size-options" aria-label="Size preset">
+            {UI_SCALE_OPTIONS.map(({ id, label }) => (
+              <button
+                key={id}
+                type="button"
+                className={
+                  uiScaleId === id
+                    ? 'header__size-pill header__size-pill--active'
+                    : 'header__size-pill'
+                }
+                aria-pressed={uiScaleId === id}
+                aria-label={`Size ${label}`}
+                onClick={() => onUiScaleChange(id)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="header__size-btn"
+            onClick={onUiScaleIncrease}
+            disabled={!canIncreaseUiScale}
+            aria-label="Larger buttons"
+          >
+            +
+          </button>
+        </div>
 
         <div className="header__menu" ref={menuRef}>
           <button
