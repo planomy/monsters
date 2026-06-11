@@ -32,6 +32,7 @@ export function applyUiScale(id: UiScaleId) {
   const factor = scaleFactor(id)
   document.documentElement.dataset.uiScale = id
   document.documentElement.style.setProperty('--ui-scale', String(factor))
+  document.documentElement.style.setProperty('--card-scale', String(factor))
 }
 
 export function initUiScale() {

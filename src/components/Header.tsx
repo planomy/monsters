@@ -188,13 +188,13 @@ export function Header({
           REWARD ALL
         </button>
 
-        <div className="header__size" role="group" aria-label="Button size">
+        <div className="header__size" role="group" aria-label="Card size">
           <button
             type="button"
             className="header__size-btn"
             onClick={onUiScaleDecrease}
             disabled={!canDecreaseUiScale}
-            aria-label="Smaller buttons"
+            aria-label="Smaller cards"
           >
             −
           </button>
@@ -221,7 +221,7 @@ export function Header({
             className="header__size-btn"
             onClick={onUiScaleIncrease}
             disabled={!canIncreaseUiScale}
-            aria-label="Larger buttons"
+            aria-label="Larger cards"
           >
             +
           </button>
