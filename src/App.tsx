@@ -1,12 +1,14 @@
 import { useCallback, useState } from 'react'
 import { Header } from './components/Header'
+import { ClassView } from './components/ClassView'
 import { PickStudentModal } from './components/PickStudentModal'
 import { ShuffleOrderModal } from './components/ShuffleOrderModal'
-import { StudentGrid } from './components/StudentGrid'
 import { useMonsterz } from './hooks/useMonsterz'
+import { useMorningPoll } from './hooks/useMorningPoll'
 import { useTheme } from './hooks/useTheme'
 import { useUiScale } from './hooks/useUiScale'
 import type { Student } from './types'
+import { loadQuestionsExpanded, saveQuestionsExpanded } from './utils/questionsExpanded'
 import './App.css'
 
 interface PickModalState {
@@ -38,12 +40,10 @@ function App() {
     resetPickerCycle,
     shuffleClassOrder,
   } = useMonsterz()
+  const pollApi = useMorningPoll()
   const {
     preference: themePreference,
-    gradientId,
-    resolved: themeResolved,
     setPreference: setThemePreference,
-    setGradientId,
   } = useTheme()
   const {
     scaleId: uiScaleId,
@@ -57,6 +57,12 @@ function App() {
   const [pickModal, setPickModal] = useState<PickModalState | null>(null)
   const [shuffleStudents, setShuffleStudents] = useState<Student[] | null>(null)
   const [highlightedStudentId, setHighlightedStudentId] = useState<string | null>(null)
+  const [questionsExpanded, setQuestionsExpanded] = useState(loadQuestionsExpanded)
+
+  const setExpanded = useCallback((expanded: boolean) => {
+    setQuestionsExpanded(expanded)
+    saveQuestionsExpanded(expanded)
+  }, [])
 
   const highlightStudent = useCallback((studentId: string) => {
     setHighlightedStudentId(studentId)
@@ -88,10 +94,20 @@ function App() {
     })
   }, [shuffleStudents])
 
+  const handleGreetAnswer = useCallback(
+    (studentId: string, optionId: string) => {
+      const isFirst = pollApi.recordResponse(studentId, optionId)
+      if (isFirst) incrementTally(studentId)
+    },
+    [pollApi, incrementTally],
+  )
+
   return (
     <div className="app">
       <Header
         state={state}
+        questionsExpanded={questionsExpanded}
+        onShowQuestions={() => setExpanded(true)}
         totalTallies={totalTallies}
         presentCount={presentCount}
         absentCount={absentCount}
@@ -111,10 +127,7 @@ function App() {
           })
         }}
         themePreference={themePreference}
-        themeResolved={themeResolved}
-        gradientId={gradientId}
         onThemeChange={setThemePreference}
-        onGradientChange={setGradientId}
         uiScaleId={uiScaleId}
         onUiScaleChange={setUiScaleId}
         onUiScaleDecrease={decreaseUiScale}
@@ -124,22 +137,20 @@ function App() {
       />
 
       <main className="app__main">
-        <p className="app__hint">
-          Tap a card to award a tally · Shift+click or right-click to remove one · Double-click a name to rename · Away marks absent
-        </p>
-        <StudentGrid
+        <ClassView
           students={state.students}
+          presentCount={presentCount}
           highlightedStudentId={highlightedStudentId}
+          questionsExpanded={questionsExpanded}
+          onQuestionsExpandedChange={setExpanded}
+          pollApi={pollApi}
+          onGreetAnswer={handleGreetAnswer}
           onIncrement={incrementTally}
           onDecrement={decrementTally}
           onRename={updateName}
           onToggleAbsent={toggleAbsent}
         />
       </main>
-
-      <footer className="app__footer">
-        <p>Monsterz — built for morning greetings, camera moments, and classroom wins.</p>
-      </footer>
 
       {pickModal && (
         <PickStudentModal

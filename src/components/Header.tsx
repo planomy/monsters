@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { DARK_GRADIENTS } from '../data/gradients'
 import type { ThemePreference } from '../hooks/useTheme'
 import type { UiScaleId } from '../hooks/useUiScale'
 import { UI_SCALE_OPTIONS } from '../hooks/useUiScale'
@@ -18,6 +17,8 @@ const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
 
 interface HeaderProps {
   state: AppState
+  questionsExpanded: boolean
+  onShowQuestions: () => void
   totalTallies: number
   presentCount: number
   absentCount: number
@@ -33,10 +34,7 @@ interface HeaderProps {
   onResetAll: () => void
   onImport: (file: File) => void
   themePreference: ThemePreference
-  themeResolved: 'light' | 'dark'
-  gradientId: string
   onThemeChange: (theme: ThemePreference) => void
-  onGradientChange: (gradientId: string) => void
   uiScaleId: UiScaleId
   onUiScaleChange: (scaleId: UiScaleId) => void
   onUiScaleDecrease: () => void
@@ -58,6 +56,8 @@ function GearIcon() {
 
 export function Header({
   state,
+  questionsExpanded,
+  onShowQuestions,
   totalTallies,
   presentCount,
   absentCount,
@@ -73,10 +73,7 @@ export function Header({
   onResetAll,
   onImport,
   themePreference,
-  themeResolved,
-  gradientId,
   onThemeChange,
-  onGradientChange,
   uiScaleId,
   onUiScaleChange,
   onUiScaleDecrease,
@@ -184,6 +181,12 @@ export function Header({
           PICK
         </button>
 
+        {!questionsExpanded && (
+          <button type="button" className="header__questions" onClick={onShowQuestions}>
+            QUESTIONS
+          </button>
+        )}
+
         <button type="button" className="header__reward" onClick={onRewardAll}>
           REWARD ALL
         </button>
@@ -258,29 +261,6 @@ export function Header({
                     >
                       {label}
                     </button>
-                  ))}
-                </div>
-              </div>
-              <div className="header__gradients" role="group" aria-label="Dark mode background">
-                <span className="header__theme-label">
-                  Background{themeResolved === 'light' ? ' (dark mode)' : ''}
-                </span>
-                <div className="header__gradient-grid">
-                  {DARK_GRADIENTS.map((gradient) => (
-                    <button
-                      key={gradient.id}
-                      type="button"
-                      className={
-                        gradientId === gradient.id
-                          ? 'header__gradient-swatch header__gradient-swatch--active'
-                          : 'header__gradient-swatch'
-                      }
-                      style={{ background: gradient.css }}
-                      title={gradient.name}
-                      aria-label={gradient.name}
-                      aria-pressed={gradientId === gradient.id}
-                      onClick={() => onGradientChange(gradient.id)}
-                    />
                   ))}
                 </div>
               </div>

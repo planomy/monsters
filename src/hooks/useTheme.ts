@@ -56,7 +56,7 @@ export function initTheme() {
 
 export function useTheme() {
   const [preference, setPreferenceState] = useState<ThemePreference>(() => getStoredPreference())
-  const [gradientId, setGradientIdState] = useState<string>(() => getStoredGradientId())
+  const gradientId = getStoredGradientId()
 
   const setPreference = useCallback(
     (next: ThemePreference) => {
@@ -69,20 +69,6 @@ export function useTheme() {
       applyTheme(next, gradientId)
     },
     [gradientId],
-  )
-
-  const setGradientId = useCallback(
-    (next: string) => {
-      const id = getDarkGradient(next).id
-      setGradientIdState(id)
-      try {
-        localStorage.setItem(GRADIENT_STORAGE_KEY, id)
-      } catch {
-        /* ignore */
-      }
-      applyGradient(id)
-    },
-    [],
   )
 
   useEffect(() => {
@@ -98,9 +84,7 @@ export function useTheme() {
 
   return {
     preference,
-    gradientId,
     resolved: resolveTheme(preference),
     setPreference,
-    setGradientId,
   }
 }

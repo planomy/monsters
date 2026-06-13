@@ -11,6 +11,8 @@ import { MonsterAvatar } from './MonsterAvatar'
 interface StudentCardProps {
   student: Student
   highlighted?: boolean
+  pollAnswerLabel?: string | null
+  onGreet?: (id: string, anchor: { x: number; y: number; rect: DOMRect }) => void
   onIncrement: (id: string) => void
   onDecrement: (id: string) => void
   onRename: (id: string, name: string) => void
@@ -20,6 +22,8 @@ interface StudentCardProps {
 export function StudentCard({
   student,
   highlighted = false,
+  pollAnswerLabel = null,
+  onGreet,
   onIncrement,
   onDecrement,
   onRename,
@@ -43,6 +47,14 @@ export function StudentCard({
 
   const handleClick = (e: React.MouseEvent) => {
     if (editing) return
+    if (onGreet) {
+      onGreet(student.id, {
+        x: e.clientX,
+        y: e.clientY,
+        rect: e.currentTarget.getBoundingClientRect(),
+      })
+      return
+    }
     if (e.shiftKey) {
       onDecrement(student.id)
     } else {
@@ -68,6 +80,7 @@ export function StudentCard({
     celebration && `student-card--celebrate student-card--${celebration}`,
     student.absent && 'student-card--absent',
     highlighted && 'student-card--highlighted',
+    pollAnswerLabel && 'student-card--answered',
   ]
     .filter(Boolean)
     .join(' ')
@@ -80,10 +93,15 @@ export function StudentCard({
       className={cardClass}
       onClick={handleClick}
       onContextMenu={(e) => {
+        if (onGreet) return
         e.preventDefault()
         onDecrement(student.id)
       }}
-      title="Click to +1 · Shift+click or right-click to −1 · Double-click name to edit · Away toggles absence"
+      title={
+        onGreet
+          ? 'Tap to greet and record answer · Double-click name to edit · Away toggles absence'
+          : 'Click to +1 · Shift+click or right-click to −1 · Double-click name to edit · Away toggles absence'
+      }
     >
       <button
         type="button"
@@ -136,6 +154,19 @@ export function StudentCard({
           <h2 className="student-card__name" onDoubleClick={startEditing}>
             {student.name}
           </h2>
+        )}
+        {onGreet && (
+          <span
+            className={
+              pollAnswerLabel
+                ? 'student-card__poll-answer'
+                : 'student-card__poll-answer student-card__poll-answer--empty'
+            }
+            title={pollAnswerLabel ? 'Recorded answer' : undefined}
+            aria-hidden={!pollAnswerLabel}
+          >
+            {pollAnswerLabel ?? '\u00a0'}
+          </span>
         )}
       </div>
     </article>
