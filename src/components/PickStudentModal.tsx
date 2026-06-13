@@ -62,8 +62,7 @@ export function PickStudentModal({
           <>
             <h2 className="tool-modal__name">No students to pick</h2>
             <p className="tool-modal__meta">
-              No one has logged on yet. Tap a card to give a mark, or tap <strong>Back</strong> if
-              someone was marked away.
+              No one has logged on yet. Tap a card to give a mark.
             </p>
           </>
         )}

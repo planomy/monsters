@@ -1,20 +1,34 @@
 import type { Student } from '../types'
 
-const DEFAULT_NAMES = [
-  'Student 1', 'Student 2', 'Student 3', 'Student 4', 'Student 5',
-  'Student 6', 'Student 7', 'Student 8', 'Student 9', 'Student 10',
-  'Student 11', 'Student 12', 'Student 13', 'Student 14', 'Student 15',
-  'Student 16', 'Student 17', 'Student 18', 'Student 19', 'Student 20',
-  'Student 21', 'Student 22', 'Student 23', 'Student 24', 'Student 25',
-  'Student 26', 'Student 27', 'Student 28', 'Student 29', 'Student 30',
-]
+export const DEFAULT_CLASS_SIZE = 30
+export const MIN_CLASS_SIZE = 1
+export const MAX_CLASS_SIZE = 40
 
-export function createDefaultStudents(): Student[] {
-  return DEFAULT_NAMES.map((name, index) => ({
+export function defaultStudentName(index: number): string {
+  return `Student ${index + 1}`
+}
+
+export function createStudentForSlot(index: number): Student {
+  return {
     id: `student-${index + 1}`,
-    name,
+    name: defaultStudentName(index),
     tally: 0,
-    monsterIndex: index + 1,
+    monsterIndex: (index % 30) + 1,
     absent: false,
-  }))
+  }
+}
+
+export function createDefaultStudents(count = DEFAULT_CLASS_SIZE): Student[] {
+  return Array.from({ length: count }, (_, index) => createStudentForSlot(index))
+}
+
+export function wouldLoseStudentData(students: Student[], newCount: number): boolean {
+  if (newCount >= students.length) return false
+  return students.slice(newCount).some((student, offset) => {
+    const index = newCount + offset
+    return (
+      student.tally > 0 ||
+      student.name !== defaultStudentName(index)
+    )
+  })
 }

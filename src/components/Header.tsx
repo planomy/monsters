@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ThemePreference } from '../hooks/useTheme'
+import {
+  MAX_CLASS_SIZE,
+  MIN_CLASS_SIZE,
+  wouldLoseStudentData,
+} from '../data/defaults'
 import type { AppState } from '../types'
 import { getDailyMonsterIndex } from '../utils/dailyMonster'
 import { exportToCsv, exportToJson } from '../utils/export'
@@ -7,7 +12,7 @@ import { activateEmbeddedStorage } from '../utils/storage'
 import { ConfirmModal } from './ConfirmModal'
 import { MonsterAvatar } from './MonsterAvatar'
 
-type ConfirmAction = 'reset-tallies' | 'reset-all'
+type ConfirmAction = 'reset-tallies' | 'reset-all' | 'shrink-class'
 
 const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
   { value: 'light', label: 'Light' },
@@ -33,6 +38,7 @@ interface HeaderProps {
   onResetTallies: () => void
   onResetAll: () => void
   onImport: (file: File) => void
+  onClassSizeChange: (count: number) => void
   themePreference: ThemePreference
   onThemeChange: (theme: ThemePreference) => void
   onUiScaleDecrease: () => void
@@ -70,6 +76,7 @@ export function Header({
   onResetTallies,
   onResetAll,
   onImport,
+  onClassSizeChange,
   themePreference,
   onThemeChange,
   onUiScaleDecrease,
@@ -82,6 +89,9 @@ export function Header({
   const menuRef = useRef<HTMLDivElement>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
+  const [pendingClassSize, setPendingClassSize] = useState<number | null>(null)
+
+  const classSize = state.students.length
 
   const saveLabel =
     saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved' : 'Save'
@@ -127,9 +137,26 @@ export function Header({
     void activateEmbeddedStorage().finally(() => {
       if (confirmAction === 'reset-tallies') onResetTallies()
       if (confirmAction === 'reset-all') onResetAll()
+      if (confirmAction === 'shrink-class' && pendingClassSize !== null) {
+        onClassSizeChange(pendingClassSize)
+      }
       setConfirmAction(null)
+      setPendingClassSize(null)
       closeMenu()
     })
+  }
+
+  const requestClassSize = (nextCount: number) => {
+    if (nextCount === classSize) return
+    if (nextCount < MIN_CLASS_SIZE || nextCount > MAX_CLASS_SIZE) return
+
+    if (nextCount < classSize && wouldLoseStudentData(state.students, nextCount)) {
+      setPendingClassSize(nextCount)
+      setConfirmAction('shrink-class')
+      return
+    }
+
+    onClassSizeChange(nextCount)
   }
 
   return (
@@ -156,14 +183,22 @@ export function Header({
         </div>
 
         <div className="header__chips" aria-label="Class summary">
-          <span className="header__chip">
-            <strong>{presentCount}</strong> present
-          </span>
-          {absentCount > 0 && (
-            <span className="header__chip">
-              <strong>{absentCount}</strong> away
+          <span
+            className="header__chip header__chip--status"
+            aria-label={`${absentCount} not logged on, ${presentCount} logged on`}
+          >
+            <span className="header__status-item">
+              <span className="header__status-dot header__status-dot--away" aria-hidden="true" />
+              <strong>{absentCount}</strong>
             </span>
-          )}
+            <span className="header__status-sep" aria-hidden="true">
+              /
+            </span>
+            <span className="header__status-item">
+              <span className="header__status-dot header__status-dot--present" aria-hidden="true" />
+              <strong>{presentCount}</strong>
+            </span>
+          </span>
           <span className="header__chip header__chip--tally">
             <strong>{totalTallies}</strong> tallies
           </span>
@@ -252,6 +287,33 @@ export function Header({
                       {label}
                     </button>
                   ))}
+                </div>
+              </div>
+              <div className="header__menu-divider" role="separator" />
+              <div className="header__class-size" role="group" aria-label="Students in class">
+                <span className="header__theme-label">Students in class</span>
+                <div className="header__class-size-control">
+                  <button
+                    type="button"
+                    className="header__class-size-btn"
+                    onClick={() => requestClassSize(classSize - 1)}
+                    disabled={classSize <= MIN_CLASS_SIZE}
+                    aria-label="Remove student card"
+                  >
+                    −
+                  </button>
+                  <span className="header__class-size-value" aria-live="polite">
+                    {classSize}
+                  </span>
+                  <button
+                    type="button"
+                    className="header__class-size-btn"
+                    onClick={() => requestClassSize(classSize + 1)}
+                    disabled={classSize >= MAX_CLASS_SIZE}
+                    aria-label="Add student card"
+                  >
+                    +
+                  </button>
                 </div>
               </div>
               <div className="header__menu-divider" role="separator" />
@@ -388,6 +450,19 @@ export function Header({
           confirmLabel="Reset all"
           onConfirm={runConfirmedAction}
           onCancel={() => setConfirmAction(null)}
+        />
+      )}
+
+      {confirmAction === 'shrink-class' && pendingClassSize !== null && (
+        <ConfirmModal
+          title="Remove student cards?"
+          message={`Lower the class to ${pendingClassSize} students? Cards at the end with names or marks will be removed.`}
+          confirmLabel="Remove cards"
+          onConfirm={runConfirmedAction}
+          onCancel={() => {
+            setConfirmAction(null)
+            setPendingClassSize(null)
+          }}
         />
       )}
     </header>

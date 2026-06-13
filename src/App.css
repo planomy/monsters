@@ -228,6 +228,41 @@
   color: var(--white);
 }
 
+.header__chip--status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.header__status-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.header__status-sep {
+  color: rgba(255, 255, 255, 0.35);
+  font-weight: 600;
+}
+
+.header__status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+.header__status-dot--away {
+  background: #ef4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.55);
+}
+
+.header__status-dot--present {
+  background: #22c55e;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.55);
+}
+
 .header__chip--tally strong {
   color: #fcd34d;
 }
@@ -603,9 +638,7 @@ html[data-ui-scale='xlarge'] .student-grid--compact {
   right: calc(6px * var(--card-scale));
 }
 
-.student-grid--compact .student-card__absent {
-  font-size: calc(0.5rem * var(--card-scale));
-  padding: calc(0.08rem * var(--card-scale)) calc(0.3rem * var(--card-scale));
+.student-grid--compact .student-card__status {
   top: calc(5px * var(--card-scale));
   left: calc(5px * var(--card-scale));
 }
@@ -712,11 +745,9 @@ html[data-ui-scale='small'] .student-grid:not(.student-grid--compact) {
   font-size: calc(0.68rem * var(--card-scale));
 }
 
-.student-grid--morning .student-card__absent {
+.student-grid--morning .student-card__status {
   top: 4px;
   left: 5px;
-  padding: 0.08rem 0.28rem;
-  font-size: calc(0.5rem * var(--card-scale));
 }
 
 .student-grid--morning .student-card__info {
@@ -753,10 +784,9 @@ html[data-ui-scale='small'] .student-grid:not(.student-grid--compact) {
   border-color: rgba(168, 85, 247, 0.42);
 }
 
-[data-theme='dark'] .student-card__absent {
+[data-theme='dark'] .student-card__status {
   background: rgba(48, 40, 68, 0.9);
   border-color: rgba(186, 164, 235, 0.2);
-  color: var(--text-muted);
 }
 
 [data-theme='dark'] .student-card__name-input {
@@ -790,12 +820,12 @@ html[data-ui-scale='small'] .student-grid:not(.student-grid--compact) {
   transform: scale(0.98);
 }
 
-.student-card--absent {
+.student-card--away {
   opacity: 0.52;
   filter: grayscale(0.35);
 }
 
-.student-card--absent:hover {
+.student-card--away:hover {
   opacity: 0.68;
 }
 
@@ -815,39 +845,37 @@ html[data-ui-scale='small'] .student-grid:not(.student-grid--compact) {
   }
 }
 
-.student-card__absent {
+.student-card__status {
   position: absolute;
   top: 8px;
   left: 10px;
   z-index: 2;
-  padding: 0.15rem 0.45rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(14px * var(--card-scale));
+  height: calc(14px * var(--card-scale));
+  border-radius: 50%;
   background: var(--card-bg);
-  color: var(--text-muted);
-  font-size: calc(0.62rem * var(--card-scale));
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  cursor: pointer;
-  opacity: 0.5;
-  transition:
-    background 0.12s ease,
-    color 0.12s ease,
-    border-color 0.12s ease,
-    opacity 0.12s ease;
+  border: 1px solid var(--border);
+  pointer-events: none;
 }
 
-.student-card__absent:hover {
-  border-color: var(--purple);
-  color: var(--purple);
-  opacity: 0.85;
+.student-card__status-dot {
+  width: calc(7px * var(--card-scale));
+  height: calc(7px * var(--card-scale));
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
-.student-card__absent--on {
-  border-color: #f59e0b;
-  background: rgba(245, 158, 11, 0.15);
-  color: #b45309;
+.student-card__status-dot--present {
+  background: #22c55e;
+  box-shadow: 0 0 4px rgba(34, 197, 94, 0.6);
+}
+
+.student-card__status-dot--away {
+  background: #ef4444;
+  box-shadow: 0 0 4px rgba(239, 68, 68, 0.6);
 }
 
 .student-card--celebrate {
@@ -1502,6 +1530,52 @@ html[data-ui-scale='small'] .student-grid:not(.student-grid--compact) {
   color: var(--white);
   background: var(--purple);
   box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+}
+
+.header__class-size {
+  padding: 0.5rem 0.65rem 0.35rem;
+}
+
+.header__class-size-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  padding: 0.2rem;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.header__class-size-btn {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--white);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.header__class-size-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.header__class-size-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.header__class-size-value {
+  min-width: 2rem;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--white);
 }
 
 /* Monster avatar */

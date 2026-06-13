@@ -16,7 +16,6 @@ interface StudentCardProps {
   onIncrement: (id: string) => void
   onDecrement: (id: string) => void
   onRename: (id: string, name: string) => void
-  onToggleAbsent: (id: string) => void
 }
 
 export function StudentCard({
@@ -27,13 +26,13 @@ export function StudentCard({
   onIncrement,
   onDecrement,
   onRename,
-  onToggleAbsent,
 }: StudentCardProps) {
   const [editing, setEditing] = useState(false)
   const [celebration, setCelebration] = useState<CelebrationVariant | null>(null)
   const [draftName, setDraftName] = useState(student.name)
   const inputRef = useRef<HTMLInputElement>(null)
   const prevTallyRef = useRef(student.tally)
+  const isLoggedOn = student.tally > 0
 
   useEffect(() => {
     if (student.tally > prevTallyRef.current) {
@@ -78,7 +77,7 @@ export function StudentCard({
   const cardClass = [
     'student-card',
     celebration && `student-card--celebrate student-card--${celebration}`,
-    student.absent && 'student-card--absent',
+    !isLoggedOn && 'student-card--away',
     highlighted && 'student-card--highlighted',
     pollAnswerLabel && 'student-card--answered',
   ]
@@ -99,26 +98,23 @@ export function StudentCard({
       }}
       title={
         onGreet
-          ? 'Tap to greet and record answer · Double-click name to edit · Away toggles absence'
-          : 'Click to +1 · Shift+click or right-click to −1 · Double-click name to edit · Away toggles absence'
+          ? 'Tap to greet and record answer · Double-click name to edit'
+          : 'Click to +1 · Shift+click or right-click to −1 · Double-click name to edit'
       }
     >
-      <button
-        type="button"
-        className={
-          student.absent
-            ? 'student-card__absent student-card__absent--on'
-            : 'student-card__absent'
-        }
-        onClick={(e) => {
-          e.stopPropagation()
-          onToggleAbsent(student.id)
-        }}
-        aria-pressed={student.absent}
-        aria-label={student.absent ? `Mark ${student.name} present` : `Mark ${student.name} away`}
+      <span
+        className="student-card__status"
+        aria-label={isLoggedOn ? `${student.name} logged on` : `${student.name} not logged on`}
       >
-        {student.absent ? 'Back' : 'Away'}
-      </button>
+        <span
+          className={
+            isLoggedOn
+              ? 'student-card__status-dot student-card__status-dot--present'
+              : 'student-card__status-dot student-card__status-dot--away'
+          }
+          aria-hidden="true"
+        />
+      </span>
 
       <div className="student-card__tally" aria-label={`${student.tally} points`}>
         {student.tally}
@@ -128,14 +124,12 @@ export function StudentCard({
         <MonsterAvatar index={student.monsterIndex} name={student.name} />
         {sparkles && (
           <span className={`student-card__sparkles student-card__sparkles--${celebration}`} aria-hidden="true">
-            {sparkles.map((symbol, index) => (
-              <span key={`${celebration}-${index}`}>{symbol}</span>
-            ))}
+            {sparkles}
           </span>
         )}
       </div>
 
-      <div className="student-card__info">
+      <div className="student-card__name-wrap">
         {editing ? (
           <input
             ref={inputRef}
@@ -145,30 +139,25 @@ export function StudentCard({
             onBlur={commitName}
             onKeyDown={(e) => {
               if (e.key === 'Enter') commitName()
-              if (e.key === 'Escape') setEditing(false)
+              if (e.key === 'Escape') {
+                setDraftName(student.name)
+                setEditing(false)
+              }
             }}
             onClick={(e) => e.stopPropagation()}
-            aria-label="Edit student name"
           />
         ) : (
-          <h2 className="student-card__name" onDoubleClick={startEditing}>
+          <h3 className="student-card__name" onDoubleClick={startEditing}>
             {student.name}
-          </h2>
-        )}
-        {onGreet && (
-          <span
-            className={
-              pollAnswerLabel
-                ? 'student-card__poll-answer'
-                : 'student-card__poll-answer student-card__poll-answer--empty'
-            }
-            title={pollAnswerLabel ? 'Recorded answer' : undefined}
-            aria-hidden={!pollAnswerLabel}
-          >
-            {pollAnswerLabel ?? '\u00a0'}
-          </span>
+          </h3>
         )}
       </div>
+
+      {pollAnswerLabel && (
+        <p className="student-card__poll-answer" title="Morning question answers">
+          {pollAnswerLabel}
+        </p>
+      )}
     </article>
   )
 }

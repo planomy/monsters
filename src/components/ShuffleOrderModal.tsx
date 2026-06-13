@@ -3,7 +3,6 @@ import type { Student } from '../types'
 
 interface ShuffleOrderModalProps {
   students: Student[]
-  absentCount: number
   onReshuffle: () => void
   onCopy: () => void
   onClose: () => void
@@ -11,7 +10,6 @@ interface ShuffleOrderModalProps {
 
 export function ShuffleOrderModal({
   students,
-  absentCount,
   onReshuffle,
   onCopy,
   onClose,
@@ -42,9 +40,8 @@ export function ShuffleOrderModal({
         <h2 className="tool-modal__title">Class order</h2>
         <p className="tool-modal__meta">
           {students.length
-            ? `Random order for ${students.length} present student${students.length === 1 ? '' : 's'}`
-            : 'No present students to shuffle'}
-          {absentCount > 0 ? ` · ${absentCount} away` : ''}
+            ? `Random order for ${students.length} logged-on student${students.length === 1 ? '' : 's'}`
+            : 'No logged-on students to shuffle'}
         </p>
 
         {students.length > 0 && (

@@ -1,12 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { createDefaultStudents } from '../data/defaults'
+import {
+  createDefaultStudents,
+  createStudentForSlot,
+  MAX_CLASS_SIZE,
+  MIN_CLASS_SIZE,
+} from '../data/defaults'
 import type { AppState, HistoryEntry, Student } from '../types'
 import { importFromJson } from '../utils/export'
 import { shuffle } from '../utils/random'
 import { activateEmbeddedStorage, loadState, saveState } from '../utils/storage'
 
 function presentStudents(students: Student[]) {
-  return students.filter((s) => !s.absent && s.tally > 0)
+  return students.filter((s) => s.tally > 0)
 }
 
 export function useMonsterz() {
@@ -198,15 +203,31 @@ export function useMonsterz() {
     [commitSave],
   )
 
-  const toggleAbsent = useCallback(
-    (studentId: string) => {
-      updateState((prev) => ({
-        ...prev,
-        students: prev.students.map((s) =>
-          s.id === studentId ? { ...s, absent: !s.absent } : s,
-        ),
-      }))
-      pickerPoolRef.current = pickerPoolRef.current.filter((id) => id !== studentId)
+  const setClassSize = useCallback(
+    (newCount: number) => {
+      const clamped = Math.min(MAX_CLASS_SIZE, Math.max(MIN_CLASS_SIZE, newCount))
+
+      updateState((prev) => {
+        const current = prev.students.length
+        if (clamped === current) return prev
+
+        const validIds = new Set<string>()
+
+        if (clamped > current) {
+          const added = Array.from({ length: clamped - current }, (_, offset) =>
+            createStudentForSlot(current + offset),
+          )
+          const students = [...prev.students, ...added]
+          students.forEach((s) => validIds.add(s.id))
+          pickerPoolRef.current = pickerPoolRef.current.filter((id) => validIds.has(id))
+          return { ...prev, students }
+        }
+
+        const students = prev.students.slice(0, clamped)
+        students.forEach((s) => validIds.add(s.id))
+        pickerPoolRef.current = pickerPoolRef.current.filter((id) => validIds.has(id))
+        return { ...prev, students }
+      })
     },
     [updateState],
   )
@@ -250,7 +271,7 @@ export function useMonsterz() {
 
   const totalTallies = state.students.reduce((sum, s) => sum + s.tally, 0)
   const presentCount = presentStudents(state.students).length
-  const absentCount = state.students.filter((s) => s.absent).length
+  const absentCount = state.students.length - presentCount
 
   return {
     state,
@@ -269,7 +290,7 @@ export function useMonsterz() {
     resetToDefaults,
     manualSave,
     importState,
-    toggleAbsent,
+    setClassSize,
     pickRandomStudent,
     resetPickerCycle,
     shuffleClassOrder,

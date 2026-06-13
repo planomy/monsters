@@ -7,7 +7,6 @@ interface StudentGridProps {
   onIncrement?: (id: string) => void
   onDecrement?: (id: string) => void
   onRename: (id: string, name: string) => void
-  onToggleAbsent: (id: string) => void
   pollMode?: boolean
   getPollAnswerLabel?: (id: string) => string | null
   onGreet?: (id: string, anchor: { x: number; y: number; rect: DOMRect }) => void
@@ -19,7 +18,6 @@ export function StudentGrid({
   onIncrement,
   onDecrement,
   onRename,
-  onToggleAbsent,
   pollMode = false,
   getPollAnswerLabel,
   onGreet,
@@ -39,7 +37,6 @@ export function StudentGrid({
           onIncrement={onIncrement ?? (() => {})}
           onDecrement={onDecrement ?? (() => {})}
           onRename={onRename}
-          onToggleAbsent={onToggleAbsent}
         />
       ))}
     </section>

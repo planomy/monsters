@@ -242,6 +242,18 @@ export function useMorningPoll() {
     }))
   }, [updatePoll])
 
+  const pruneResponses = useCallback((validStudentIds: Set<string>) => {
+    updatePoll((prev) => ({
+      ...prev,
+      questions: prev.questions.map((q) => ({
+        ...q,
+        responses: Object.fromEntries(
+          Object.entries(q.responses).filter(([studentId]) => validStudentIds.has(studentId)),
+        ),
+      })),
+    }))
+  }, [updatePoll])
+
   const resetPoll = useCallback(() => {
     const next = createDefaultPoll()
     setPoll(next)
@@ -313,6 +325,7 @@ export function useMorningPoll() {
     removeOption,
     recordResponse,
     clearAllResponses,
+    pruneResponses,
     resetPoll,
     getCountsForQuestion,
     getAnswerLabel,

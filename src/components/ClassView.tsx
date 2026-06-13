@@ -17,7 +17,6 @@ interface ClassViewProps {
   onIncrement: (id: string) => void
   onDecrement: (id: string) => void
   onRename: (id: string, name: string) => void
-  onToggleAbsent: (id: string) => void
 }
 
 export function ClassView({
@@ -29,7 +28,6 @@ export function ClassView({
   onIncrement,
   onDecrement,
   onRename,
-  onToggleAbsent,
 }: ClassViewProps) {
   const { poll, clearAllResponses, resetPoll } = pollApi
 
@@ -88,7 +86,6 @@ export function ClassView({
             onIncrement={questionsExpanded ? undefined : onIncrement}
             onDecrement={questionsExpanded ? undefined : onDecrement}
             onRename={onRename}
-            onToggleAbsent={onToggleAbsent}
           />
         </div>
       </div>

@@ -35,7 +35,7 @@ function App() {
     resetToDefaults,
     manualSave,
     importState,
-    toggleAbsent,
+    setClassSize,
     pickRandomStudent,
     resetPickerCycle,
     shuffleClassOrder,
@@ -100,6 +100,16 @@ function App() {
     [pollApi, incrementTally],
   )
 
+  const handleClassSizeChange = useCallback(
+    (count: number) => {
+      setClassSize(count)
+      if (count < state.students.length) {
+        pollApi.pruneResponses(new Set(state.students.slice(0, count).map((student) => student.id)))
+      }
+    },
+    [pollApi, setClassSize, state.students],
+  )
+
   return (
     <div className="app">
       <Header
@@ -124,6 +134,7 @@ function App() {
             window.alert(err.message || 'Could not import file.')
           })
         }}
+        onClassSizeChange={handleClassSizeChange}
         themePreference={themePreference}
         onThemeChange={setThemePreference}
         onUiScaleDecrease={decreaseUiScale}
@@ -142,7 +153,6 @@ function App() {
           onIncrement={incrementTally}
           onDecrement={decrementTally}
           onRename={updateName}
-          onToggleAbsent={toggleAbsent}
         />
       </main>
 
@@ -167,7 +177,6 @@ function App() {
       {shuffleStudents && (
         <ShuffleOrderModal
           students={shuffleStudents}
-          absentCount={absentCount}
           onReshuffle={() => setShuffleStudents(shuffleClassOrder())}
           onCopy={copyShuffleList}
           onClose={() => setShuffleStudents(null)}
