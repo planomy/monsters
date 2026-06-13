@@ -8,7 +8,8 @@ interface StudentGridProps {
   onDecrement?: (id: string) => void
   onRename: (id: string, name: string) => void
   pollMode?: boolean
-  getPollAnswerLabel?: (id: string) => string | null
+  getPollQ1AnswerLabel?: (id: string) => string | null
+  getPollQ2AnswerLabel?: (id: string) => string | null
   onGreet?: (id: string, anchor: { x: number; y: number; rect: DOMRect }) => void
 }
 
@@ -19,7 +20,8 @@ export function StudentGrid({
   onDecrement,
   onRename,
   pollMode = false,
-  getPollAnswerLabel,
+  getPollQ1AnswerLabel,
+  getPollQ2AnswerLabel,
   onGreet,
 }: StudentGridProps) {
   return (
@@ -32,7 +34,12 @@ export function StudentGrid({
           key={student.id}
           student={student}
           highlighted={student.id === highlightedStudentId}
-          pollAnswerLabel={pollMode && getPollAnswerLabel ? getPollAnswerLabel(student.id) : null}
+          pollQ1AnswerLabel={
+            pollMode && getPollQ1AnswerLabel ? getPollQ1AnswerLabel(student.id) : null
+          }
+          pollQ2AnswerLabel={
+            pollMode && getPollQ2AnswerLabel ? getPollQ2AnswerLabel(student.id) : null
+          }
           onGreet={pollMode ? onGreet : undefined}
           onIncrement={onIncrement ?? (() => {})}
           onDecrement={onDecrement ?? (() => {})}

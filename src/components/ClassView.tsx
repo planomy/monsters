@@ -74,7 +74,12 @@ export function ClassView({
             students={students}
             highlightedStudentId={highlightedStudentId}
             pollMode={questionsExpanded}
-            getPollAnswerLabel={questionsExpanded ? pollApi.getAnswerSummary : undefined}
+            getPollQ1AnswerLabel={
+              questionsExpanded ? (id) => pollApi.getAnswerLabel(id, 0) : undefined
+            }
+            getPollQ2AnswerLabel={
+              questionsExpanded ? (id) => pollApi.getAnswerLabel(id, 1) : undefined
+            }
             onGreet={
               questionsExpanded
                 ? (id, anchor) => {

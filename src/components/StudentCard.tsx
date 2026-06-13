@@ -11,7 +11,8 @@ import { MonsterAvatar } from './MonsterAvatar'
 interface StudentCardProps {
   student: Student
   highlighted?: boolean
-  pollAnswerLabel?: string | null
+  pollQ1AnswerLabel?: string | null
+  pollQ2AnswerLabel?: string | null
   onGreet?: (id: string, anchor: { x: number; y: number; rect: DOMRect }) => void
   onIncrement: (id: string) => void
   onDecrement: (id: string) => void
@@ -21,7 +22,8 @@ interface StudentCardProps {
 export function StudentCard({
   student,
   highlighted = false,
-  pollAnswerLabel = null,
+  pollQ1AnswerLabel = null,
+  pollQ2AnswerLabel = null,
   onGreet,
   onIncrement,
   onDecrement,
@@ -79,7 +81,7 @@ export function StudentCard({
     celebration && `student-card--celebrate student-card--${celebration}`,
     !isLoggedOn && 'student-card--away',
     highlighted && 'student-card--highlighted',
-    pollAnswerLabel && 'student-card--answered',
+    (pollQ1AnswerLabel || pollQ2AnswerLabel) && 'student-card--answered',
   ]
     .filter(Boolean)
     .join(' ')
@@ -151,21 +153,22 @@ export function StudentCard({
             {student.name}
           </h3>
         )}
-
-        {onGreet && (
-          <p
-            className={
-              pollAnswerLabel
-                ? 'student-card__poll-answer'
-                : 'student-card__poll-answer student-card__poll-answer--empty'
-            }
-            title={pollAnswerLabel ? 'Morning question answers' : undefined}
-            aria-hidden={!pollAnswerLabel}
-          >
-            {pollAnswerLabel ?? '\u00A0'}
-          </p>
-        )}
       </div>
+
+      {(pollQ1AnswerLabel || pollQ2AnswerLabel) && (
+        <div className="student-card__poll-answers" aria-label="Morning question answers">
+          {pollQ1AnswerLabel && (
+            <span className="student-card__poll-answer" title={`Q1: ${pollQ1AnswerLabel}`}>
+              {pollQ1AnswerLabel}
+            </span>
+          )}
+          {pollQ2AnswerLabel && (
+            <span className="student-card__poll-answer" title={`Q2: ${pollQ2AnswerLabel}`}>
+              {pollQ2AnswerLabel}
+            </span>
+          )}
+        </div>
+      )}
     </article>
   )
 }
