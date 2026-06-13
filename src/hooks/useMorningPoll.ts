@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createDefaultPoll } from '../data/pollDefaults'
-import type { ChartType, MorningPollState, PollOption } from '../types'
+import type { ChartType, MorningPollState, PollOption, PollQuestion } from '../types'
 
 const STORAGE_KEY = 'monsterz-morning-poll'
 const STORAGE_VERSION = 2
@@ -55,7 +55,7 @@ function normalizePoll(poll: MorningPollState): MorningPollState {
 
   return {
     questions: questions.slice(0, 2),
-    activeQuestionIndex: poll.activeQuestionIndex === 1 ? 1 : 0,
+    activeQuestionIndex: 0,
     chartType: poll.chartType ?? 'bar',
   }
 }
@@ -104,11 +104,33 @@ export interface PollCounts {
   percentage: number
 }
 
+function computeCounts(question: PollQuestion): PollCounts[] {
+  const responses = question.responses
+  const total = Object.keys(responses).length
+  return question.options.map((option) => {
+    const count = Object.values(responses).filter((id) => id === option.id).length
+    return {
+      optionId: option.id,
+      label: option.label,
+      count,
+      percentage: total > 0 ? Math.round((count / total) * 100) : 0,
+    }
+  })
+}
+
+function countFullyResponded(questions: PollQuestion[]): number {
+  if (questions.length === 0) return 0
+  const responseSets = questions.map((q) => new Set(Object.keys(q.responses)))
+  let count = 0
+  for (const studentId of responseSets[0]) {
+    if (responseSets.every((set) => set.has(studentId))) count++
+  }
+  return count
+}
+
 export function useMorningPoll() {
   const [poll, setPoll] = useState<MorningPollState>(() => loadPoll())
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const activeQuestion = poll.questions[poll.activeQuestionIndex]
 
   const persist = useCallback((next: MorningPollState) => {
     if (saveTimer.current) clearTimeout(saveTimer.current)
@@ -129,23 +151,14 @@ export function useMorningPoll() {
     [persist],
   )
 
-  const updateActiveQuestion = useCallback(
-    (updater: (question: MorningPollState['questions'][number]) => MorningPollState['questions'][number]) => {
+  const updateQuestion = useCallback(
+    (
+      questionIndex: number,
+      updater: (question: PollQuestion) => PollQuestion,
+    ) => {
       updatePoll((prev) => ({
         ...prev,
-        questions: prev.questions.map((q, i) =>
-          i === prev.activeQuestionIndex ? updater(q) : q,
-        ),
-      }))
-    },
-    [updatePoll],
-  )
-
-  const setActiveQuestionIndex = useCallback(
-    (index: number) => {
-      updatePoll((prev) => ({
-        ...prev,
-        activeQuestionIndex: index === 1 ? 1 : 0,
+        questions: prev.questions.map((q, i) => (i === questionIndex ? updater(q) : q)),
       }))
     },
     [updatePoll],
@@ -153,13 +166,9 @@ export function useMorningPoll() {
 
   const setQuestion = useCallback(
     (index: number, question: string) => {
-      updatePoll((prev) => ({
-        ...prev,
-        activeQuestionIndex: index,
-        questions: prev.questions.map((q, i) => (i === index ? { ...q, question } : q)),
-      }))
+      updateQuestion(index, (q) => ({ ...q, question }))
     },
-    [updatePoll],
+    [updateQuestion],
   )
 
   const setChartType = useCallback(
@@ -169,26 +178,29 @@ export function useMorningPoll() {
     [updatePoll],
   )
 
-  const addOption = useCallback(() => {
-    updateActiveQuestion((q) => ({
-      ...q,
-      options: [...q.options, { id: createOptionId(), label: `Option ${q.options.length + 1}` }],
-    }))
-  }, [updateActiveQuestion])
+  const addOption = useCallback(
+    (questionIndex: number) => {
+      updateQuestion(questionIndex, (q) => ({
+        ...q,
+        options: [...q.options, { id: createOptionId(), label: `Option ${q.options.length + 1}` }],
+      }))
+    },
+    [updateQuestion],
+  )
 
   const updateOptionLabel = useCallback(
-    (optionId: string, label: string) => {
-      updateActiveQuestion((q) => ({
+    (questionIndex: number, optionId: string, label: string) => {
+      updateQuestion(questionIndex, (q) => ({
         ...q,
         options: q.options.map((o) => (o.id === optionId ? { ...o, label } : o)),
       }))
     },
-    [updateActiveQuestion],
+    [updateQuestion],
   )
 
   const removeOption = useCallback(
-    (optionId: string) => {
-      updateActiveQuestion((q) => {
+    (questionIndex: number, optionId: string) => {
+      updateQuestion(questionIndex, (q) => {
         if (q.options.length <= 2) return q
         const responses = { ...q.responses }
         for (const [studentId, answerId] of Object.entries(responses)) {
@@ -201,18 +213,18 @@ export function useMorningPoll() {
         }
       })
     },
-    [updateActiveQuestion],
+    [updateQuestion],
   )
 
   const recordResponse = useCallback(
-    (studentId: string, optionId: string): boolean => {
+    (studentId: string, questionIndex: number, optionId: string): boolean => {
       let isFirstGreet = false
       updatePoll((prev) => {
         isFirstGreet = !prev.questions.some((q) => studentId in q.responses)
         return {
           ...prev,
           questions: prev.questions.map((q, i) =>
-            i === prev.activeQuestionIndex
+            i === questionIndex
               ? { ...q, responses: { ...q.responses, [studentId]: optionId } }
               : q,
           ),
@@ -223,9 +235,12 @@ export function useMorningPoll() {
     [updatePoll],
   )
 
-  const clearResponses = useCallback(() => {
-    updateActiveQuestion((q) => ({ ...q, responses: {} }))
-  }, [updateActiveQuestion])
+  const clearAllResponses = useCallback(() => {
+    updatePoll((prev) => ({
+      ...prev,
+      questions: prev.questions.map((q) => ({ ...q, responses: {} })),
+    }))
+  }, [updatePoll])
 
   const resetPoll = useCallback(() => {
     const next = createDefaultPoll()
@@ -233,27 +248,36 @@ export function useMorningPoll() {
     savePoll(next)
   }, [])
 
-  const getCounts = useCallback((): PollCounts[] => {
-    const responses = activeQuestion.responses
-    const total = Object.keys(responses).length
-    return activeQuestion.options.map((option) => {
-      const count = Object.values(responses).filter((id) => id === option.id).length
-      return {
-        optionId: option.id,
-        label: option.label,
-        count,
-        percentage: total > 0 ? Math.round((count / total) * 100) : 0,
-      }
-    })
-  }, [activeQuestion])
+  const getCountsForQuestion = useCallback(
+    (questionIndex: number): PollCounts[] => {
+      const question = poll.questions[questionIndex]
+      return question ? computeCounts(question) : []
+    },
+    [poll.questions],
+  )
 
   const getAnswerLabel = useCallback(
-    (studentId: string): string | null => {
-      const optionId = activeQuestion.responses[studentId]
+    (studentId: string, questionIndex: number): string | null => {
+      const question = poll.questions[questionIndex]
+      if (!question) return null
+      const optionId = question.responses[studentId]
       if (!optionId) return null
-      return activeQuestion.options.find((o) => o.id === optionId)?.label ?? null
+      return question.options.find((o) => o.id === optionId)?.label ?? null
     },
-    [activeQuestion],
+    [poll.questions],
+  )
+
+  const getAnswerSummary = useCallback(
+    (studentId: string): string | null => {
+      const parts = poll.questions.map((q) => {
+        const optionId = q.responses[studentId]
+        if (!optionId) return null
+        return q.options.find((o) => o.id === optionId)?.label ?? null
+      })
+      if (parts.every((p) => !p)) return null
+      return parts.map((p) => p ?? '—').join(' · ')
+    },
+    [poll.questions],
   )
 
   useEffect(() => {
@@ -262,26 +286,37 @@ export function useMorningPoll() {
     }
   }, [])
 
-  const respondedCount = Object.keys(activeQuestion.responses).length
+  const countsByQuestion = useMemo(
+    () => poll.questions.map((q) => computeCounts(q)),
+    [poll.questions],
+  )
 
-  const counts = useMemo(() => getCounts(), [getCounts])
+  const respondedCountByQuestion = useMemo(
+    () => poll.questions.map((q) => Object.keys(q.responses).length),
+    [poll.questions],
+  )
+
+  const fullyRespondedCount = useMemo(
+    () => countFullyResponded(poll.questions),
+    [poll.questions],
+  )
 
   return {
     poll,
-    activeQuestion,
-    activeQuestionIndex: poll.activeQuestionIndex,
-    respondedCount,
-    counts,
-    setActiveQuestionIndex,
+    countsByQuestion,
+    respondedCountByQuestion,
+    fullyRespondedCount,
     setQuestion,
     setChartType,
     addOption,
     updateOptionLabel,
     removeOption,
     recordResponse,
-    clearResponses,
+    clearAllResponses,
     resetPoll,
+    getCountsForQuestion,
     getAnswerLabel,
+    getAnswerSummary,
   }
 }
 

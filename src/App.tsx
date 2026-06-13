@@ -95,8 +95,8 @@ function App() {
   }, [shuffleStudents])
 
   const handleGreetAnswer = useCallback(
-    (studentId: string, optionId: string) => {
-      const isFirst = pollApi.recordResponse(studentId, optionId)
+    (studentId: string, questionIndex: number, optionId: string) => {
+      const isFirst = pollApi.recordResponse(studentId, questionIndex, optionId)
       if (isFirst) incrementTally(studentId)
     },
     [pollApi, incrementTally],
@@ -139,7 +139,6 @@ function App() {
       <main className="app__main">
         <ClassView
           students={state.students}
-          presentCount={presentCount}
           highlightedStudentId={highlightedStudentId}
           questionsExpanded={questionsExpanded}
           onQuestionsExpandedChange={setExpanded}

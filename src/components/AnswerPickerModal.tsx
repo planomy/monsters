@@ -9,12 +9,18 @@ export interface GreetAnchor {
   rect: DOMRect
 }
 
+export interface AnswerPickerQuestion {
+  index: number
+  title: string
+  options: PollOption[]
+  selectedOptionId: string | null
+}
+
 interface AnswerPickerModalProps {
   student: Student
-  options: PollOption[]
-  currentOptionId: string | null
+  questions: AnswerPickerQuestion[]
   anchor: GreetAnchor
-  onSelect: (optionId: string) => void
+  onSelect: (questionIndex: number, optionId: string) => void
   onClose: () => void
 }
 
@@ -44,8 +50,7 @@ function placePopover(anchor: GreetAnchor, width: number, height: number) {
 
 export function AnswerPickerModal({
   student,
-  options,
-  currentOptionId,
+  questions,
   anchor,
   onSelect,
   onClose,
@@ -63,7 +68,7 @@ export function AnswerPickerModal({
     if (!panel) return
     const { width, height } = panel.getBoundingClientRect()
     setPosition(placePopover(anchor, width, height))
-  }, [anchor, options.length, student.id])
+  }, [anchor, questions, student.id])
 
   useEffect(() => {
     firstOptionRef.current?.focus()
@@ -87,14 +92,14 @@ export function AnswerPickerModal({
       />
       <div
         ref={panelRef}
-        className="answer-popover"
+        className="answer-popover answer-popover--dual"
         style={{
           left: position.left,
           top: position.top,
           transform: position.transform,
         }}
         role="dialog"
-        aria-label={`Record answer for ${student.name}`}
+        aria-label={`Record answers for ${student.name}`}
       >
         <div className="answer-popover__header">
           <span className="answer-popover__name">{student.name}</span>
@@ -102,26 +107,36 @@ export function AnswerPickerModal({
             ×
           </button>
         </div>
-        <div className="answer-popover__options" role="group" aria-label="Answer options">
-          {options.map((option, index) => (
-            <button
-              key={option.id}
-              ref={index === 0 ? firstOptionRef : undefined}
-              type="button"
-              className={
-                currentOptionId === option.id
-                  ? 'answer-popover__option answer-popover__option--selected'
-                  : 'answer-popover__option'
-              }
-              style={{ '--option-color': chartColor(index) } as CSSProperties}
-              onClick={() => {
-                onSelect(option.id)
-                onClose()
-              }}
-            >
-              <span className="answer-popover__option-swatch" aria-hidden="true" />
-              {option.label}
-            </button>
+        <div className="answer-popover__questions">
+          {questions.map((question, questionIdx) => (
+            <div key={question.index} className="answer-popover__question">
+              <span className="answer-popover__question-label" title={question.title}>
+                Q{question.index + 1}: {question.title}
+              </span>
+              <div
+                className="answer-popover__options"
+                role="group"
+                aria-label={`Question ${question.index + 1} options`}
+              >
+                {question.options.map((option, optionIdx) => (
+                  <button
+                    key={option.id}
+                    ref={questionIdx === 0 && optionIdx === 0 ? firstOptionRef : undefined}
+                    type="button"
+                    className={
+                      question.selectedOptionId === option.id
+                        ? 'answer-popover__option answer-popover__option--selected'
+                        : 'answer-popover__option'
+                    }
+                    style={{ '--option-color': chartColor(optionIdx) } as CSSProperties}
+                    onClick={() => onSelect(question.index, option.id)}
+                  >
+                    <span className="answer-popover__option-swatch" aria-hidden="true" />
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </div>

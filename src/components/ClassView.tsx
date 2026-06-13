@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { Student } from '../types'
 import type { useMorningPoll } from '../hooks/useMorningPoll'
 import { AnswerPickerModal, type GreetAnchor } from './AnswerPickerModal'
@@ -10,12 +10,11 @@ type PollApi = ReturnType<typeof useMorningPoll>
 
 interface ClassViewProps {
   students: Student[]
-  presentCount: number
   highlightedStudentId?: string | null
   questionsExpanded: boolean
   onQuestionsExpandedChange: (expanded: boolean) => void
   pollApi: PollApi
-  onGreetAnswer: (studentId: string, optionId: string) => void
+  onGreetAnswer: (studentId: string, questionIndex: number, optionId: string) => void
   onIncrement: (id: string) => void
   onDecrement: (id: string) => void
   onRename: (id: string, name: string) => void
@@ -24,7 +23,6 @@ interface ClassViewProps {
 
 export function ClassView({
   students,
-  presentCount,
   highlightedStudentId,
   questionsExpanded,
   onQuestionsExpandedChange,
@@ -35,15 +33,25 @@ export function ClassView({
   onRename,
   onToggleAbsent,
 }: ClassViewProps) {
-  const { activeQuestion, activeQuestionIndex, clearResponses, resetPoll } = pollApi
+  const { poll, clearAllResponses, resetPoll } = pollApi
 
   const [picker, setPicker] = useState<{ student: Student; anchor: GreetAnchor } | null>(null)
   const [confirmClear, setConfirmClear] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
 
-  const handleSelectAnswer = (optionId: string) => {
+  const pickerQuestions = useMemo(() => {
+    if (!picker) return []
+    return poll.questions.map((question, index) => ({
+      index,
+      title: question.question,
+      options: question.options,
+      selectedOptionId: question.responses[picker.student.id] ?? null,
+    }))
+  }, [picker, poll.questions])
+
+  const handleSelectAnswer = (questionIndex: number, optionId: string) => {
     if (!picker) return
-    onGreetAnswer(picker.student.id, optionId)
+    onGreetAnswer(picker.student.id, questionIndex, optionId)
   }
 
   return (
@@ -58,7 +66,6 @@ export function ClassView({
         <div className="classroom__questions">
           <QuestionsPanel
             pollApi={pollApi}
-            presentCount={presentCount}
             onHide={() => onQuestionsExpandedChange(false)}
             onClear={() => setConfirmClear(true)}
             onReset={() => setConfirmReset(true)}
@@ -69,31 +76,30 @@ export function ClassView({
       <div className="classroom__students">
         <div className="classroom__students-scroll">
           <StudentGrid
-          students={students}
-          highlightedStudentId={highlightedStudentId}
-          pollMode={questionsExpanded}
-          getPollAnswerLabel={questionsExpanded ? pollApi.getAnswerLabel : undefined}
-          onGreet={
-            questionsExpanded
-              ? (id, anchor) => {
-                  const student = students.find((s) => s.id === id)
-                  if (student) setPicker({ student, anchor })
-                }
-              : undefined
-          }
-          onIncrement={questionsExpanded ? undefined : onIncrement}
-          onDecrement={questionsExpanded ? undefined : onDecrement}
-          onRename={onRename}
-          onToggleAbsent={onToggleAbsent}
-        />
+            students={students}
+            highlightedStudentId={highlightedStudentId}
+            pollMode={questionsExpanded}
+            getPollAnswerLabel={questionsExpanded ? pollApi.getAnswerSummary : undefined}
+            onGreet={
+              questionsExpanded
+                ? (id, anchor) => {
+                    const student = students.find((s) => s.id === id)
+                    if (student) setPicker({ student, anchor })
+                  }
+                : undefined
+            }
+            onIncrement={questionsExpanded ? undefined : onIncrement}
+            onDecrement={questionsExpanded ? undefined : onDecrement}
+            onRename={onRename}
+            onToggleAbsent={onToggleAbsent}
+          />
         </div>
       </div>
 
       {picker && (
         <AnswerPickerModal
           student={picker.student}
-          options={activeQuestion.options}
-          currentOptionId={activeQuestion.responses[picker.student.id] ?? null}
+          questions={pickerQuestions}
           anchor={picker.anchor}
           onSelect={handleSelectAnswer}
           onClose={() => setPicker(null)}
@@ -102,11 +108,11 @@ export function ClassView({
 
       {confirmClear && (
         <ConfirmModal
-          title={`Clear Q${activeQuestionIndex + 1} responses?`}
-          message="Remove every recorded answer for this question. Tallies stay the same."
+          title="Clear all responses?"
+          message="Remove every recorded answer for both questions. Tallies stay the same."
           confirmLabel="Clear responses"
           onConfirm={() => {
-            clearResponses()
+            clearAllResponses()
             setConfirmClear(false)
           }}
           onCancel={() => setConfirmClear(false)}
