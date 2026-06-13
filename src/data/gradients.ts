@@ -11,7 +11,7 @@ export const DARK_GRADIENTS: DarkGradient[] = [
   {
     id: 'eggplant',
     name: 'Eggplant',
-    css: 'linear-gradient(145deg, #1a0a2e 0%, #3b1d5c 38%, #160820 72%, #050208 100%)',
+    css: 'linear-gradient(155deg, #2a1f42 0%, #3d2d62 24%, #2f2448 48%, #221a36 72%, #1a1528 100%)',
   },
   {
     id: 'royal-plum',

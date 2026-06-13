@@ -6,7 +6,6 @@ type PollApi = ReturnType<typeof useMorningPoll>
 
 interface QuestionsPanelProps {
   pollApi: PollApi
-  onHide: () => void
   onClear: () => void
   onReset: () => void
 }
@@ -24,7 +23,6 @@ function GearIcon() {
 
 export function QuestionsPanel({
   pollApi,
-  onHide,
   onClear,
   onReset,
 }: QuestionsPanelProps) {
@@ -148,18 +146,6 @@ export function QuestionsPanel({
                   }}
                 >
                   Reset
-                </button>
-                <div className="q-panel__menu-divider" role="separator" />
-                <button
-                  type="button"
-                  className="q-panel__menu-item"
-                  role="menuitem"
-                  onClick={() => {
-                    onHide()
-                    closeMenu()
-                  }}
-                >
-                  Hide
                 </button>
               </div>
             )}

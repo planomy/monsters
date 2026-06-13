@@ -40,7 +40,7 @@ export function PickStudentModal({
       ? remaining > 0
         ? `${remaining} left before everyone is picked again`
         : 'Everyone picked — next pick starts a new round'
-      : 'Mark students present to pick from the class'
+      : 'Students need at least one mark before they can be picked'
 
   return (
     <dialog ref={dialogRef} className="tool-modal" onClose={onClose}>
@@ -62,7 +62,8 @@ export function PickStudentModal({
           <>
             <h2 className="tool-modal__name">No students to pick</h2>
             <p className="tool-modal__meta">
-              Everyone is marked away. Tap <strong>Back</strong> on a card to mark them present.
+              No one has logged on yet. Tap a card to give a mark, or tap <strong>Back</strong> if
+              someone was marked away.
             </p>
           </>
         )}

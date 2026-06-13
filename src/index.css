@@ -11,6 +11,7 @@
   --border: #e5e7eb;
   --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   --card-shadow-hover: 0 4px 16px rgba(124, 58, 237, 0.15);
+  --surface-overlay: #ffffff;
   --ui-scale: 1;
   --card-scale: 1;
 
@@ -26,20 +27,29 @@
 }
 
 [data-theme='dark'] {
-  --bg: #0a0612;
+  --bg: #16121f;
   --app-gradient: linear-gradient(
-    145deg,
-    #1a0a2e 0%,
-    #3b1d5c 38%,
-    #160820 72%,
-    #050208 100%
+    155deg,
+    #2a1f42 0%,
+    #3d2d62 24%,
+    #2f2448 48%,
+    #221a36 72%,
+    #1a1528 100%
   );
-  --card-bg: rgba(22, 18, 31, 0.88);
-  --text: #f4f0fa;
-  --text-muted: #a1a1aa;
-  --border: #2e2640;
-  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
-  --card-shadow-hover: 0 4px 20px rgba(124, 58, 237, 0.25);
+  --surface-raised: rgba(48, 40, 68, 0.82);
+  --surface-overlay: rgba(56, 46, 78, 0.94);
+  --card-bg: rgba(40, 34, 58, 0.78);
+  --text: #ebe7f5;
+  --text-muted: #9b92b3;
+  --border: rgba(186, 164, 235, 0.14);
+  --card-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.18),
+    0 6px 20px rgba(0, 0, 0, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --card-shadow-hover:
+    0 8px 28px rgba(124, 58, 237, 0.22),
+    0 0 0 1px rgba(168, 85, 247, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
 *,
@@ -70,6 +80,18 @@ body {
   background: var(--app-gradient);
   background-color: var(--bg);
   background-attachment: fixed;
+}
+
+[data-theme='dark'] body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 85% 55% at 12% -8%, rgba(124, 58, 237, 0.22), transparent 52%),
+    radial-gradient(ellipse 70% 48% at 92% 108%, rgba(168, 85, 247, 0.14), transparent 48%),
+    radial-gradient(ellipse 50% 40% at 50% 50%, rgba(76, 29, 149, 0.06), transparent 70%);
 }
 
 .sr-only {

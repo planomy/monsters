@@ -6,7 +6,7 @@ import { shuffle } from '../utils/random'
 import { activateEmbeddedStorage, loadState, saveState } from '../utils/storage'
 
 function presentStudents(students: Student[]) {
-  return students.filter((s) => !s.absent)
+  return students.filter((s) => !s.absent && s.tally > 0)
 }
 
 export function useMonsterz() {
@@ -250,7 +250,7 @@ export function useMonsterz() {
 
   const totalTallies = state.students.reduce((sum, s) => sum + s.tally, 0)
   const presentCount = presentStudents(state.students).length
-  const absentCount = state.students.length - presentCount
+  const absentCount = state.students.filter((s) => s.absent).length
 
   return {
     state,

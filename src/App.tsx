@@ -46,8 +46,6 @@ function App() {
     setPreference: setThemePreference,
   } = useTheme()
   const {
-    scaleId: uiScaleId,
-    setScaleId: setUiScaleId,
     increase: increaseUiScale,
     decrease: decreaseUiScale,
     canDecrease: canDecreaseUiScale,
@@ -107,7 +105,7 @@ function App() {
       <Header
         state={state}
         questionsExpanded={questionsExpanded}
-        onShowQuestions={() => setExpanded(true)}
+        onQuestionsToggle={() => setExpanded(!questionsExpanded)}
         totalTallies={totalTallies}
         presentCount={presentCount}
         absentCount={absentCount}
@@ -128,8 +126,6 @@ function App() {
         }}
         themePreference={themePreference}
         onThemeChange={setThemePreference}
-        uiScaleId={uiScaleId}
-        onUiScaleChange={setUiScaleId}
         onUiScaleDecrease={decreaseUiScale}
         onUiScaleIncrease={increaseUiScale}
         canDecreaseUiScale={canDecreaseUiScale}
@@ -141,7 +137,6 @@ function App() {
           students={state.students}
           highlightedStudentId={highlightedStudentId}
           questionsExpanded={questionsExpanded}
-          onQuestionsExpandedChange={setExpanded}
           pollApi={pollApi}
           onGreetAnswer={handleGreetAnswer}
           onIncrement={incrementTally}

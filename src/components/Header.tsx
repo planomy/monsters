@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ThemePreference } from '../hooks/useTheme'
-import type { UiScaleId } from '../hooks/useUiScale'
-import { UI_SCALE_OPTIONS } from '../hooks/useUiScale'
 import type { AppState } from '../types'
+import { getDailyMonsterIndex } from '../utils/dailyMonster'
 import { exportToCsv, exportToJson } from '../utils/export'
 import { activateEmbeddedStorage } from '../utils/storage'
 import { ConfirmModal } from './ConfirmModal'
+import { MonsterAvatar } from './MonsterAvatar'
 
 type ConfirmAction = 'reset-tallies' | 'reset-all'
 
@@ -18,7 +18,7 @@ const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
 interface HeaderProps {
   state: AppState
   questionsExpanded: boolean
-  onShowQuestions: () => void
+  onQuestionsToggle: () => void
   totalTallies: number
   presentCount: number
   absentCount: number
@@ -35,8 +35,6 @@ interface HeaderProps {
   onImport: (file: File) => void
   themePreference: ThemePreference
   onThemeChange: (theme: ThemePreference) => void
-  uiScaleId: UiScaleId
-  onUiScaleChange: (scaleId: UiScaleId) => void
   onUiScaleDecrease: () => void
   onUiScaleIncrease: () => void
   canDecreaseUiScale: boolean
@@ -57,7 +55,7 @@ function GearIcon() {
 export function Header({
   state,
   questionsExpanded,
-  onShowQuestions,
+  onQuestionsToggle,
   totalTallies,
   presentCount,
   absentCount,
@@ -74,13 +72,12 @@ export function Header({
   onImport,
   themePreference,
   onThemeChange,
-  uiScaleId,
-  onUiScaleChange,
   onUiScaleDecrease,
   onUiScaleIncrease,
   canDecreaseUiScale,
   canIncreaseUiScale,
 }: HeaderProps) {
+  const dailyMonsterIndex = getDailyMonsterIndex()
   const fileRef = useRef<HTMLInputElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -181,11 +178,19 @@ export function Header({
           PICK
         </button>
 
-        {!questionsExpanded && (
-          <button type="button" className="header__questions" onClick={onShowQuestions}>
-            QUESTIONS
-          </button>
-        )}
+        <button
+          type="button"
+          className={
+            questionsExpanded
+              ? 'header__questions header__questions--active'
+              : 'header__questions'
+          }
+          aria-pressed={questionsExpanded}
+          aria-label={questionsExpanded ? 'Hide questions panel' : 'Show questions panel'}
+          onClick={onQuestionsToggle}
+        >
+          {questionsExpanded ? 'Hide Questions' : 'Show Questions'}
+        </button>
 
         <button type="button" className="header__reward" onClick={onRewardAll}>
           REWARD ALL
@@ -201,23 +206,8 @@ export function Header({
           >
             −
           </button>
-          <div className="header__size-options" aria-label="Size preset">
-            {UI_SCALE_OPTIONS.map(({ id, label }) => (
-              <button
-                key={id}
-                type="button"
-                className={
-                  uiScaleId === id
-                    ? 'header__size-pill header__size-pill--active'
-                    : 'header__size-pill'
-                }
-                aria-pressed={uiScaleId === id}
-                aria-label={`Size ${label}`}
-                onClick={() => onUiScaleChange(id)}
-              >
-                {label}
-              </button>
-            ))}
+          <div className="header__size-mascot" title="Today's card-size buddy">
+            <MonsterAvatar index={dailyMonsterIndex} name="Card size buddy" />
           </div>
           <button
             type="button"

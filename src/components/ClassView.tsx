@@ -12,7 +12,6 @@ interface ClassViewProps {
   students: Student[]
   highlightedStudentId?: string | null
   questionsExpanded: boolean
-  onQuestionsExpandedChange: (expanded: boolean) => void
   pollApi: PollApi
   onGreetAnswer: (studentId: string, questionIndex: number, optionId: string) => void
   onIncrement: (id: string) => void
@@ -25,7 +24,6 @@ export function ClassView({
   students,
   highlightedStudentId,
   questionsExpanded,
-  onQuestionsExpandedChange,
   pollApi,
   onGreetAnswer,
   onIncrement,
@@ -66,7 +64,6 @@ export function ClassView({
         <div className="classroom__questions">
           <QuestionsPanel
             pollApi={pollApi}
-            onHide={() => onQuestionsExpandedChange(false)}
             onClear={() => setConfirmClear(true)}
             onReset={() => setConfirmReset(true)}
           />
