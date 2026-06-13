@@ -339,7 +339,7 @@ export function Header({
                 }}
                 disabled={presentCount === 0}
               >
-                Shuffle class order
+                Random class list
               </button>
               <div className="header__menu-divider" role="separator" />
               <button
