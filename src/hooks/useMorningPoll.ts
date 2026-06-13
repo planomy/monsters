@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { createDefaultPoll } from '../data/pollDefaults'
+import { createDefaultPoll, POLL_OPTION_COUNT } from '../data/pollDefaults'
+import {
+  applyQuestion2Prompt,
+  pickRandomQuestion2Prompt,
+} from '../data/funQuestion2Prompts'
 import type { ChartType, MorningPollState, PollOption, PollQuestion } from '../types'
 
 const STORAGE_KEY = 'monsterz-morning-poll'
@@ -38,13 +42,28 @@ function migrateLegacyPoll(legacy: LegacyPollState): MorningPollState {
   }
 }
 
+function normalizeQuestionOptions(
+  options: PollOption[] | undefined,
+  questionIndex: number,
+  defaults: PollQuestion[],
+): PollOption[] {
+  const fallback = defaults[questionIndex]?.options ?? []
+  const base = options?.length ? [...options] : [...fallback]
+
+  while (base.length < POLL_OPTION_COUNT) {
+    base.push({ id: createOptionId(), label: '' })
+  }
+
+  return base.slice(0, POLL_OPTION_COUNT)
+}
+
 function normalizePoll(poll: MorningPollState): MorningPollState {
   const defaults = createDefaultPoll()
   const questions = poll.questions?.length
     ? poll.questions.map((q, i) => ({
         id: q.id ?? defaults.questions[i]?.id ?? `q-${i + 1}`,
         question: q.question ?? '',
-        options: q.options?.length ? q.options : (defaults.questions[i]?.options ?? []),
+        options: normalizeQuestionOptions(q.options, i, defaults.questions),
         responses: q.responses ?? {},
       }))
     : defaults.questions
@@ -107,7 +126,8 @@ export interface PollCounts {
 function computeCounts(question: PollQuestion): PollCounts[] {
   const responses = question.responses
   const total = Object.keys(responses).length
-  return question.options.map((option) => {
+  const visibleOptions = question.options.filter((option) => option.label.trim())
+  return visibleOptions.map((option) => {
     const count = Object.values(responses).filter((id) => id === option.id).length
     return {
       optionId: option.id,
@@ -201,7 +221,7 @@ export function useMorningPoll() {
   const removeOption = useCallback(
     (questionIndex: number, optionId: string) => {
       updateQuestion(questionIndex, (q) => {
-        if (q.options.length <= 2) return q
+        if (q.options.length <= POLL_OPTION_COUNT) return q
         const responses = { ...q.responses }
         for (const [studentId, answerId] of Object.entries(responses)) {
           if (answerId === optionId) delete responses[studentId]
@@ -259,6 +279,20 @@ export function useMorningPoll() {
     setPoll(next)
     savePoll(next)
   }, [])
+
+  const randomizeQuestion2 = useCallback(() => {
+    updatePoll((prev) => {
+      const current = prev.questions[1]
+      if (!current) return prev
+      const prompt = pickRandomQuestion2Prompt(current.question)
+      return {
+        ...prev,
+        questions: prev.questions.map((q, i) =>
+          i === 1 ? applyQuestion2Prompt(q, prompt) : q,
+        ),
+      }
+    })
+  }, [updatePoll])
 
   const getCountsForQuestion = useCallback(
     (questionIndex: number): PollCounts[] => {
@@ -327,6 +361,7 @@ export function useMorningPoll() {
     clearAllResponses,
     pruneResponses,
     resetPoll,
+    randomizeQuestion2,
     getCountsForQuestion,
     getAnswerLabel,
     getAnswerSummary,

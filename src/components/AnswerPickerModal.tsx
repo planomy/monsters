@@ -118,7 +118,9 @@ export function AnswerPickerModal({
                 role="group"
                 aria-label={`Question ${question.index + 1} options`}
               >
-                {question.options.map((option, optionIdx) => (
+                {question.options
+                  .filter((option) => option.label.trim())
+                  .map((option, optionIdx) => (
                   <button
                     key={option.id}
                     ref={questionIdx === 0 && optionIdx === 0 ? firstOptionRef : undefined}

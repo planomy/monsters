@@ -1,4 +1,7 @@
 import type { MorningPollState, PollQuestion } from '../types'
+import { createDefaultQuestion2 } from './funQuestion2Prompts'
+
+export const POLL_OPTION_COUNT = 4
 
 function createQuestion(
   id: string,
@@ -9,6 +12,8 @@ function createQuestion(
 }
 
 export function createDefaultPoll(): MorningPollState {
+  const question2 = createDefaultQuestion2()
+
   return {
     questions: [
       createQuestion('q-1', 'How are you feeling today?', [
@@ -17,11 +22,7 @@ export function createDefaultPoll(): MorningPollState {
         { id: 'opt-1-3', label: 'Okay' },
         { id: 'opt-1-4', label: 'Tired' },
       ]),
-      createQuestion('q-2', 'Did you eat breakfast?', [
-        { id: 'opt-2-1', label: 'Yes' },
-        { id: 'opt-2-2', label: 'No' },
-        { id: 'opt-2-3', label: 'Not yet' },
-      ]),
+      createQuestion('q-2', question2.question, question2.options),
     ],
     activeQuestionIndex: 0,
     chartType: 'bar',

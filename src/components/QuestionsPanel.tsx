@@ -33,7 +33,7 @@ export function QuestionsPanel({
     setQuestion,
     setChartType,
     updateOptionLabel,
-    removeOption,
+    randomizeQuestion2,
   } = pollApi
 
   const menuRef = useRef<HTMLDivElement>(null)
@@ -130,6 +130,18 @@ export function QuestionsPanel({
                   className="q-panel__menu-item"
                   role="menuitem"
                   onClick={() => {
+                    randomizeQuestion2()
+                    closeMenu()
+                  }}
+                >
+                  Random question 2
+                </button>
+                <div className="q-panel__menu-divider" role="separator" />
+                <button
+                  type="button"
+                  className="q-panel__menu-item"
+                  role="menuitem"
+                  onClick={() => {
                     onClear()
                     closeMenu()
                   }}
@@ -159,23 +171,19 @@ export function QuestionsPanel({
             <aside key={question.id} className="q-panel__aside">
               <span className="q-panel__aside-label">Q{index + 1} options</span>
               <ul className="q-panel__options">
-                {question.options.map((option) => (
+                {question.options.map((option, optionIndex) => (
                   <li key={option.id} className="q-panel__option">
                     <input
-                      className="q-panel__option-input"
+                      className={
+                        option.label.trim()
+                          ? 'q-panel__option-input'
+                          : 'q-panel__option-input q-panel__option-input--empty'
+                      }
                       value={option.label}
                       onChange={(e) => updateOptionLabel(index, option.id, e.target.value)}
-                      aria-label={`Q${index + 1} option ${option.label}`}
+                      placeholder={`Option ${optionIndex + 1}`}
+                      aria-label={`Q${index + 1} option ${optionIndex + 1}`}
                     />
-                    <button
-                      type="button"
-                      className="q-panel__option-remove"
-                      onClick={() => removeOption(index, option.id)}
-                      disabled={question.options.length <= 2}
-                      aria-label={`Remove ${option.label}`}
-                    >
-                      ×
-                    </button>
                   </li>
                 ))}
               </ul>
