@@ -129,7 +129,7 @@ export function StudentCard({
         )}
       </div>
 
-      <div className="student-card__name-wrap">
+      <div className="student-card__info">
         {editing ? (
           <input
             ref={inputRef}
@@ -151,13 +151,21 @@ export function StudentCard({
             {student.name}
           </h3>
         )}
-      </div>
 
-      {pollAnswerLabel && (
-        <p className="student-card__poll-answer" title="Morning question answers">
-          {pollAnswerLabel}
-        </p>
-      )}
+        {onGreet && (
+          <p
+            className={
+              pollAnswerLabel
+                ? 'student-card__poll-answer'
+                : 'student-card__poll-answer student-card__poll-answer--empty'
+            }
+            title={pollAnswerLabel ? 'Morning question answers' : undefined}
+            aria-hidden={!pollAnswerLabel}
+          >
+            {pollAnswerLabel ?? '\u00A0'}
+          </p>
+        )}
+      </div>
     </article>
   )
 }
