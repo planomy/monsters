@@ -38,6 +38,13 @@ export function StudentCard({
   const prevTallyRef = useRef(student.tally)
   const isLoggedOn = student.tally > 0
 
+  const isNameAreaTarget = (target: EventTarget | null) =>
+    target instanceof Element && target.closest('.student-card__info') !== null
+
+  const stopCardPointer = (e: React.SyntheticEvent) => {
+    e.stopPropagation()
+  }
+
   useEffect(() => {
     if (student.tally > prevTallyRef.current) {
       setCelebration(pickCelebration())
@@ -49,7 +56,7 @@ export function StudentCard({
   }, [student.tally])
 
   const handleClick = (e: React.MouseEvent) => {
-    if (editing) return
+    if (editing || isNameAreaTarget(e.target) || e.detail > 1) return
     if (floatMode) {
       onIncrement(student.id)
       return
@@ -69,7 +76,8 @@ export function StudentCard({
     }
   }
 
-  const startEditing = (e: React.MouseEvent) => {
+  const handleNameDoubleClick = (e: React.MouseEvent) => {
+    e.preventDefault()
     e.stopPropagation()
     setDraftName(student.name)
     setEditing(true)
@@ -142,7 +150,13 @@ export function StudentCard({
         )}
       </div>
 
-      <div className="student-card__info">
+      <div
+        className="student-card__info"
+        onPointerDown={stopCardPointer}
+        onMouseDown={stopCardPointer}
+        onClick={stopCardPointer}
+        onDoubleClick={floatMode ? undefined : handleNameDoubleClick}
+      >
         {editing ? (
           <input
             ref={inputRef}
@@ -157,16 +171,12 @@ export function StudentCard({
                 setEditing(false)
               }
             }}
-            onClick={(e) => e.stopPropagation()}
+            onPointerDown={stopCardPointer}
+            onMouseDown={stopCardPointer}
+            onClick={stopCardPointer}
           />
         ) : (
-          <h3
-            className="student-card__name"
-            onClick={(e) => e.stopPropagation()}
-            onDoubleClick={floatMode ? undefined : startEditing}
-          >
-            {student.name}
-          </h3>
+          <h3 className="student-card__name">{student.name}</h3>
         )}
       </div>
 

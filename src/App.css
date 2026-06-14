@@ -1495,6 +1495,8 @@ html[data-ui-scale='small'] .student-grid:not(.student-grid--compact) {
   flex-direction: column;
   justify-content: center;
   gap: 0.12rem;
+  cursor: text;
+  user-select: text;
 }
 
 .student-card__name {
