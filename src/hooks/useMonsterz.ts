@@ -281,6 +281,21 @@ export function useMonsterz() {
   }, [])
 
   useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== 'monsterz-app-state' || !event.newValue) return
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current)
+        saveTimer.current = null
+      }
+      setState(loadState())
+      setSaveStatus('saved')
+    }
+
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
+
+  useEffect(() => {
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current)
     }

@@ -49,37 +49,22 @@ export function FloatController({ pipWindow }: FloatControllerProps) {
   }, [pipWindow])
 
   const resizeToPanel = useCallback(() => {
-    const apply = () => {
-      const contentHeight = measureFloatContentHeight(pipWindow)
-      if (contentHeight <= 0) return
+    const contentHeight = measureFloatContentHeight(pipWindow)
+    if (contentHeight <= 0) return
 
-      const screenLimit = pipWindow.screen.availHeight - 8
-      const needsScroll = contentHeight > screenLimit
-      const targetHeight = needsScroll ? screenLimit : contentHeight
+    const screenLimit = pipWindow.screen.availHeight - 8
+    const needsScroll = contentHeight > screenLimit
+    const targetHeight = needsScroll ? screenLimit : contentHeight
 
-      setScrollable(needsScroll)
-      resizePipToContentHeight(pipWindow, PIP_WINDOW_W, targetHeight)
-    }
-
-    apply()
-    pipWindow.requestAnimationFrame(apply)
+    setScrollable(needsScroll)
+    resizePipToContentHeight(pipWindow, PIP_WINDOW_W, targetHeight)
   }, [pipWindow])
 
   useLayoutEffect(() => {
     if (!expanded) return
     resizeToPanel()
-  }, [expanded, state.students.length, resizeToPanel])
-
-  useEffect(() => {
-    if (!expanded) return
-
-    const grid = panelRef.current?.querySelector('.student-grid--float')
-    if (!grid || typeof ResizeObserver === 'undefined') return
-
-    const observer = new ResizeObserver(() => resizeToPanel())
-    observer.observe(grid)
-    return () => observer.disconnect()
-  }, [expanded, resizeToPanel])
+    pipWindow.requestAnimationFrame(resizeToPanel)
+  }, [expanded, state.students.length, resizeToPanel, pipWindow])
 
   const expand = () => {
     flushSync(() => setExpanded(true))

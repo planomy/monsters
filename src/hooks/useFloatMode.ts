@@ -2,10 +2,16 @@ import { createElement, useCallback, useEffect, useRef, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { FloatController } from '../components/FloatController'
 import { copyStylesToWindow, waitForPiPStyles } from '../utils/copyStylesToWindow'
-import { isDocumentPiPSupported } from '../utils/classroomSync'
+import {
+  attachMainWindowToPip,
+  isDocumentPiPSupported,
+  MAIN_SYNC_SOURCE,
+  notifyClassroomSync,
+  registerPipWindow,
+} from '../utils/classroomSync'
 import { pipPillWindowHeight } from '../utils/floatLayout'
 import { PIP_PILL_SIZE } from '../utils/pipWindowSize'
-import { activateEmbeddedStorage } from '../utils/storage'
+import { activateEmbeddedStorage, loadState } from '../utils/storage'
 
 const UNSUPPORTED_MESSAGE = 'Float Mode works in Chrome or Edge.'
 
@@ -19,6 +25,7 @@ export function useFloatMode() {
     pipRootRef.current?.unmount()
     pipRootRef.current = null
     pipWindowRef.current = null
+    registerPipWindow(null)
     setActive(false)
   }, [])
 
@@ -54,6 +61,7 @@ export function useFloatMode() {
 
       pipWindow.document.title = 'Monsterz Float'
       pipWindowRef.current = pipWindow
+      attachMainWindowToPip(pipWindow)
       copyStylesToWindow(pipWindow)
       await waitForPiPStyles(pipWindow)
 
@@ -63,6 +71,12 @@ export function useFloatMode() {
 
       pipRootRef.current = createRoot(mount)
       pipRootRef.current.render(createElement(FloatController, { pipWindow }))
+
+      notifyClassroomSync({
+        type: 'state',
+        sourceId: MAIN_SYNC_SOURCE,
+        state: loadState(),
+      })
 
       const handlePageHide = () => cleanupPip()
       pipWindow.addEventListener('pagehide', handlePageHide)

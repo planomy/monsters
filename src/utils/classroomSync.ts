@@ -12,7 +12,11 @@ export interface ClassroomSyncMessage {
 
 const CHANNEL_NAME = 'monsterz-classroom-sync'
 
+/** Set on the PiP window when opened so sync works even if `window.opener` is null. */
+export const PIP_MAIN_WINDOW_KEY = '__monsterzMainWindow'
+
 let channel: BroadcastChannel | null = null
+let pipWindowRef: Window | null = null
 
 function getChannel(): BroadcastChannel | null {
   if (typeof BroadcastChannel === 'undefined') return null
@@ -30,21 +34,44 @@ function isSyncMessage(data: unknown): data is ClassroomSyncMessage {
   )
 }
 
+function getMainWindow(): Window | null {
+  const tagged = (window as Window & { [PIP_MAIN_WINDOW_KEY]?: Window })[PIP_MAIN_WINDOW_KEY]
+  if (tagged && !tagged.closed) return tagged
+  if (window.opener && !window.opener.closed) return window.opener
+  return null
+}
+
+function getPipWindow(): Window | null {
+  if (pipWindowRef && !pipWindowRef.closed) return pipWindowRef
+  const docPip = window.documentPictureInPicture?.window
+  if (docPip && !docPip.closed) return docPip
+  return null
+}
+
+export function registerPipWindow(pipWindow: Window | null): void {
+  pipWindowRef = pipWindow
+}
+
+export function attachMainWindowToPip(pipWindow: Window, mainWindow: Window = window): void {
+  ;(pipWindow as Window & { [PIP_MAIN_WINDOW_KEY]: Window })[PIP_MAIN_WINDOW_KEY] = mainWindow
+  registerPipWindow(pipWindow)
+}
+
 /** Push state to all other Monsterz contexts (main tab, PiP float, etc.). */
 export function notifyClassroomSync(message: ClassroomSyncMessage): void {
   getChannel()?.postMessage(message)
 
-  // BroadcastChannel can miss Document PiP in some builds — mirror via postMessage.
-  if (window.opener && !window.opener.closed) {
+  const main = getMainWindow()
+  if (main) {
     try {
-      window.opener.postMessage(message, window.location.origin)
+      main.postMessage(message, window.location.origin)
     } catch {
       /* ignore */
     }
   }
 
-  const pipWindow = window.documentPictureInPicture?.window
-  if (pipWindow && !pipWindow.closed) {
+  const pipWindow = getPipWindow()
+  if (pipWindow && pipWindow !== window) {
     try {
       pipWindow.postMessage(message, window.location.origin)
     } catch {
@@ -72,12 +99,7 @@ export function subscribeClassroomSync(
   const onPostMessage = (event: MessageEvent) => {
     if (event.origin !== window.location.origin) return
     if (!isSyncMessage(event.data)) return
-
-    const pipWindow = window.documentPictureInPicture?.window
-    const fromPip = pipWindow != null && event.source === pipWindow
-    const fromOpener = window.opener != null && event.source === window.opener
-    if (!fromPip && !fromOpener) return
-
+    if (event.source === window) return
     deliver(event.data)
   }
 

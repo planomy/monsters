@@ -26,8 +26,8 @@ export function measureFloatContentHeight(pipWindow: Window): number {
 }
 
 /**
- * Resize PiP so inner viewport fits content height exactly.
- * `resizeTo` sets outer dimensions — we compensate for window chrome.
+ * Resize PiP to fit content. Keeps the window's top-left fixed — no moveTo,
+ * which avoids jumping to (0,0) when anchoring bottom-right from a top-left PiP.
  */
 export function resizePipToContentHeight(
   pipWindow: Window,
@@ -35,8 +35,8 @@ export function resizePipToContentHeight(
   innerContentHeight: number,
 ): void {
   try {
-    const bottom = pipWindow.screenY + pipWindow.outerHeight
-    const right = pipWindow.screenX + pipWindow.outerWidth
+    const top = pipWindow.screenY
+    const left = pipWindow.screenX
 
     const chromeH = pipWindow.outerHeight - pipWindow.innerHeight
     const chromeW = pipWindow.outerWidth - pipWindow.innerWidth
@@ -51,16 +51,8 @@ export function resizePipToContentHeight(
       pipWindow.resizeTo(outerW, outerH)
     }
 
-    pipWindow.moveTo(right - pipWindow.outerWidth, bottom - pipWindow.outerHeight)
+    pipWindow.moveTo(left, top)
   } catch {
     resizePipWindow(pipWindow, innerWidth, innerContentHeight)
   }
-}
-
-export function resizePipWindowAnchoredBottomRight(
-  pipWindow: Window,
-  width: number,
-  height: number,
-): void {
-  resizePipToContentHeight(pipWindow, width, height)
 }
