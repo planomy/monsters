@@ -1,6 +1,6 @@
 window.__MONSTERZ_GRADIENT_BOOT__ = {
   eggplant:
-    'linear-gradient(145deg, #1a0a2e 0%, #3b1d5c 38%, #160820 72%, #050208 100%)',
+    'linear-gradient(155deg, #2a1f42 0%, #3d2d62 24%, #2f2448 48%, #221a36 72%, #1a1528 100%)',
   'royal-plum': 'linear-gradient(160deg, #2e1065 0%, #4c1d95 42%, #1e0a3a 100%)',
   'midnight-violet': 'linear-gradient(180deg, #0f0520 0%, #1a1035 45%, #09040f 100%)',
   cosmic: 'linear-gradient(135deg, #1e1b4b 0%, #4c1d95 50%, #0c0618 100%)',
