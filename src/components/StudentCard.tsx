@@ -162,6 +162,7 @@ export function StudentCard({
         ) : (
           <h3
             className="student-card__name"
+            onClick={(e) => e.stopPropagation()}
             onDoubleClick={floatMode ? undefined : startEditing}
           >
             {student.name}
