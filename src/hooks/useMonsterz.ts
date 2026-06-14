@@ -8,7 +8,9 @@ import {
 import type { AppState, HistoryEntry, Student } from '../types'
 import { importFromJson } from '../utils/export'
 import { shuffle } from '../utils/random'
+import { MAIN_SYNC_SOURCE, notifyClassroomSync, subscribeClassroomSync } from '../utils/classroomSync'
 import { activateEmbeddedStorage, loadState, saveState } from '../utils/storage'
+import { applyIncrementTally } from '../utils/tallyActions'
 
 function presentStudents(students: Student[]) {
   return students.filter((s) => s.tally > 0)
@@ -30,6 +32,7 @@ export function useMonsterz() {
       const saved = saveState(next)
       setState(saved)
       setSaveStatus('saved')
+      notifyClassroomSync({ type: 'state', sourceId: MAIN_SYNC_SOURCE, state: saved })
       return saved
     } catch {
       setState(next)
@@ -55,7 +58,10 @@ export function useMonsterz() {
     (updater: (prev: AppState) => AppState) => {
       setState((prev) => {
         const next = updater(prev)
-        persist(next)
+        if (next !== prev) {
+          persist(next)
+          notifyClassroomSync({ type: 'state', sourceId: MAIN_SYNC_SOURCE, state: next })
+        }
         return next
       })
     },
@@ -66,7 +72,8 @@ export function useMonsterz() {
     (studentId: string) => {
       updateState((prev) => {
         const student = prev.students.find((s) => s.id === studentId)
-        if (!student) return prev
+        const next = applyIncrementTally(prev, studentId)
+        if (!next || !student) return prev
 
         setHistory((h) => [
           ...h.slice(-19),
@@ -78,12 +85,7 @@ export function useMonsterz() {
           },
         ])
 
-        return {
-          ...prev,
-          students: prev.students.map((s) =>
-            s.id === studentId ? { ...s, tally: s.tally + 1 } : s,
-          ),
-        }
+        return next
       })
     },
     [updateState],
@@ -262,6 +264,21 @@ export function useMonsterz() {
   const shuffleClassOrder = useCallback((): Student[] => {
     return shuffle(presentStudents(state.students))
   }, [state.students])
+
+  useEffect(() => {
+    return subscribeClassroomSync((message) => {
+      if (message.sourceId === MAIN_SYNC_SOURCE) return
+
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current)
+        saveTimer.current = null
+      }
+
+      const saved = saveState(message.state)
+      setState(saved)
+      setSaveStatus('saved')
+    })
+  }, [])
 
   useEffect(() => {
     return () => {

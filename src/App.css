@@ -291,6 +291,31 @@
   transform: scale(0.97);
 }
 
+.header__float {
+  flex-shrink: 0;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.1);
+  transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+}
+
+.header__float:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.header__float--active {
+  background: linear-gradient(135deg, var(--purple) 0%, #9333ea 100%);
+  border-color: transparent;
+  box-shadow: 0 2px 12px rgba(124, 58, 237, 0.45);
+}
+
 .header__pick {
   flex-shrink: 0;
   padding: 0.5rem 0.85rem;

@@ -1,0 +1,183 @@
+/* PiP float — native 240px layout (Chrome minimum width). No zoom, no clip. */
+
+#float-root {
+  display: block;
+  width: 240px;
+  overflow: hidden;
+}
+
+/* Collapsed: min-height bar with small centered pill */
+.float-pill-shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 240px;
+  height: 52px;
+}
+
+.float-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(124, 58, 237, 0.45);
+  border-radius: 999px;
+  background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+}
+
+.float-pill .monster-avatar__img,
+.float-pill .monster-avatar__placeholder {
+  width: 22px;
+  height: 22px;
+}
+
+.float-panel {
+  display: flex;
+  flex-direction: column;
+  width: 240px;
+  background: #16121f;
+  overflow: hidden;
+}
+
+.float-panel--scroll {
+  height: 100%;
+}
+
+.float-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 240px;
+  height: 28px;
+  background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
+}
+
+.float-panel__minimize {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.float-panel__body {
+  width: 240px;
+  flex: 0 0 auto;
+}
+
+.float-panel--scroll .float-panel__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* 2-column grid — each cell 120px */
+.student-grid--float {
+  display: grid;
+  grid-template-columns: 120px 120px;
+  gap: 0;
+  width: 240px;
+  margin: 0;
+  padding: 0;
+  align-content: start;
+}
+
+/* Mini StudentCard — same structure as compact, sized for 120×44 */
+#float-root .student-grid--float .student-card {
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+  height: 44px;
+  min-height: 44px !important;
+  max-height: 44px;
+  margin: 0;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 3px;
+  padding: 3px 4px 3px 3px;
+  border-radius: 7px;
+  align-items: center;
+  overflow: hidden;
+  transform: none !important;
+  box-sizing: border-box;
+}
+
+#float-root .student-grid--float .student-card:hover {
+  transform: none !important;
+}
+
+#float-root .student-grid--float .student-card__monster {
+  width: 30px;
+  height: 30px;
+}
+
+#float-root .student-grid--float .monster-avatar__img,
+#float-root .student-grid--float .monster-avatar__placeholder {
+  width: 28px;
+  height: 28px;
+}
+
+#float-root .student-grid--float .student-card__info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding-right: 16px;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+#float-root .student-grid--float .student-card__name {
+  margin: 0;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.15;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#float-root .student-grid--float .student-card__tally {
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  font-size: 8px;
+  font-weight: 800;
+  top: 3px;
+  right: 3px;
+}
+
+#float-root .student-grid--float .student-card__status {
+  top: 3px;
+  left: 3px;
+  width: 9px;
+  height: 9px;
+}
+
+#float-root .student-grid--float .student-card__status-dot {
+  width: 5px;
+  height: 5px;
+}
+
+#float-root .student-grid--float .student-card__poll-answers {
+  display: none;
+}
+
+#float-root .student-grid--float .student-card--celebrate,
+#float-root .student-grid--float .student-card--celebrate .student-card__monster,
+#float-root .student-grid--float .student-card--celebrate .student-card__tally {
+  animation: none !important;
+}

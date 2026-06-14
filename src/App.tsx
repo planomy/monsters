@@ -1,13 +1,15 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Header } from './components/Header'
 import { ClassView } from './components/ClassView'
 import { PickStudentModal } from './components/PickStudentModal'
 import { ShuffleOrderModal } from './components/ShuffleOrderModal'
+import { useFloatMode } from './hooks/useFloatMode'
 import { useMonsterz } from './hooks/useMonsterz'
 import { useMorningPoll } from './hooks/useMorningPoll'
 import { useTheme } from './hooks/useTheme'
 import { useUiScale } from './hooks/useUiScale'
 import type { Student } from './types'
+import { MAIN_SYNC_SOURCE, subscribeClassroomSync } from './utils/classroomSync'
 import { loadQuestionsExpanded, saveQuestionsExpanded } from './utils/questionsExpanded'
 import './App.css'
 
@@ -51,6 +53,7 @@ function App() {
     canDecrease: canDecreaseUiScale,
     canIncrease: canIncreaseUiScale,
   } = useUiScale()
+  const { active: floatModeActive, openFloatMode } = useFloatMode()
 
   const [pickModal, setPickModal] = useState<PickModalState | null>(null)
   const [shuffleStudents, setShuffleStudents] = useState<Student[] | null>(null)
@@ -72,6 +75,13 @@ function App() {
     }, 50)
     window.setTimeout(() => setHighlightedStudentId(null), 2500)
   }, [])
+
+  useEffect(() => {
+    return subscribeClassroomSync((message) => {
+      if (message.sourceId === MAIN_SYNC_SOURCE) return
+      if (message.highlightStudentId) highlightStudent(message.highlightStudentId)
+    })
+  }, [highlightStudent])
 
   const runPick = useCallback(() => {
     const result = pickRandomStudent()
@@ -141,6 +151,8 @@ function App() {
         onUiScaleIncrease={increaseUiScale}
         canDecreaseUiScale={canDecreaseUiScale}
         canIncreaseUiScale={canIncreaseUiScale}
+        floatModeActive={floatModeActive}
+        onOpenFloatMode={openFloatMode}
       />
 
       <main className="app__main">

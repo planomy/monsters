@@ -4,10 +4,12 @@ import { StudentCard } from './StudentCard'
 interface StudentGridProps {
   students: Student[]
   highlightedStudentId?: string | null
+  className?: string
   onIncrement?: (id: string) => void
   onDecrement?: (id: string) => void
   onRename: (id: string, name: string) => void
   pollMode?: boolean
+  compact?: boolean
   getPollQ1AnswerLabel?: (id: string) => string | null
   getPollQ2AnswerLabel?: (id: string) => string | null
   onGreet?: (id: string, anchor: { x: number; y: number; rect: DOMRect }) => void
@@ -16,17 +18,24 @@ interface StudentGridProps {
 export function StudentGrid({
   students,
   highlightedStudentId,
+  className,
   onIncrement,
   onDecrement,
   onRename,
   pollMode = false,
+  compact = false,
   getPollQ1AnswerLabel,
   getPollQ2AnswerLabel,
   onGreet,
 }: StudentGridProps) {
   return (
     <section
-      className={pollMode ? 'student-grid student-grid--compact' : 'student-grid'}
+      className={[
+        compact || pollMode ? 'student-grid student-grid--compact' : 'student-grid',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
       aria-label="Student monster cards"
     >
       {students.map((student) => (

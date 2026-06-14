@@ -11,6 +11,7 @@ import { MonsterAvatar } from './MonsterAvatar'
 interface StudentCardProps {
   student: Student
   highlighted?: boolean
+  floatMode?: boolean
   pollQ1AnswerLabel?: string | null
   pollQ2AnswerLabel?: string | null
   onGreet?: (id: string, anchor: { x: number; y: number; rect: DOMRect }) => void
@@ -22,6 +23,7 @@ interface StudentCardProps {
 export function StudentCard({
   student,
   highlighted = false,
+  floatMode = false,
   pollQ1AnswerLabel = null,
   pollQ2AnswerLabel = null,
   onGreet,
@@ -48,6 +50,10 @@ export function StudentCard({
 
   const handleClick = (e: React.MouseEvent) => {
     if (editing) return
+    if (floatMode) {
+      onIncrement(student.id)
+      return
+    }
     if (onGreet) {
       onGreet(student.id, {
         x: e.clientX,
@@ -94,14 +100,19 @@ export function StudentCard({
       className={cardClass}
       onClick={handleClick}
       onContextMenu={(e) => {
-        if (onGreet) return
+        if (floatMode || onGreet) {
+          e.preventDefault()
+          return
+        }
         e.preventDefault()
         onDecrement(student.id)
       }}
       title={
-        onGreet
-          ? 'Tap to greet and record answer · Double-click name to edit'
-          : 'Click to +1 · Shift+click or right-click to −1 · Double-click name to edit'
+        floatMode
+          ? `${student.name} — click to +1`
+          : onGreet
+            ? 'Tap to greet and record answer · Double-click name to edit'
+            : 'Click to +1 · Shift+click or right-click to −1 · Double-click name to edit'
       }
     >
       <span
@@ -149,7 +160,10 @@ export function StudentCard({
             onClick={(e) => e.stopPropagation()}
           />
         ) : (
-          <h3 className="student-card__name" onDoubleClick={startEditing}>
+          <h3
+            className="student-card__name"
+            onDoubleClick={floatMode ? undefined : startEditing}
+          >
             {student.name}
           </h3>
         )}

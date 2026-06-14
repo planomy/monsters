@@ -3,6 +3,7 @@ import { useState, type CSSProperties } from 'react'
 interface MonsterAvatarProps {
   index: number
   name: string
+  size?: number
 }
 
 const MONSTER_COLORS = [
@@ -13,11 +14,14 @@ const MONSTER_COLORS = [
 // Bump when monster PNGs change — Safari caches image URLs aggressively.
 const MONSTER_ASSET_VERSION = '2'
 
-export function MonsterAvatar({ index, name }: MonsterAvatarProps) {
+export function MonsterAvatar({ index, name, size }: MonsterAvatarProps) {
   const [imgError, setImgError] = useState(false)
   const color = MONSTER_COLORS[index % MONSTER_COLORS.length]
   const initial = name.trim().charAt(0).toUpperCase() || '?'
-  const src = `${import.meta.env.BASE_URL}monsters/${String(index).padStart(2, '0')}.png?v=${MONSTER_ASSET_VERSION}`
+  const src = `${window.location.origin}${import.meta.env.BASE_URL}monsters/${String(index).padStart(2, '0')}.png?v=${MONSTER_ASSET_VERSION}`
+  const dimensionStyle = size
+    ? ({ width: size, height: size, flexShrink: 0 } as CSSProperties)
+    : undefined
 
   if (!imgError) {
     return (
@@ -25,6 +29,7 @@ export function MonsterAvatar({ index, name }: MonsterAvatarProps) {
         className="monster-avatar__img"
         src={src}
         alt={`${name}'s monster`}
+        style={dimensionStyle}
         onError={() => setImgError(true)}
         loading="lazy"
       />
@@ -32,7 +37,10 @@ export function MonsterAvatar({ index, name }: MonsterAvatarProps) {
   }
 
   return (
-    <div className="monster-avatar__placeholder" style={{ '--monster-color': color } as CSSProperties}>
+    <div
+      className="monster-avatar__placeholder"
+      style={{ '--monster-color': color, ...dimensionStyle } as CSSProperties}
+    >
       <svg viewBox="0 0 80 80" aria-hidden="true">
         <ellipse cx="40" cy="52" rx="28" ry="22" fill="var(--monster-color)" opacity="0.9" />
         <ellipse cx="40" cy="38" rx="22" ry="20" fill="var(--monster-color)" />

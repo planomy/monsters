@@ -45,6 +45,8 @@ interface HeaderProps {
   onUiScaleIncrease: () => void
   canDecreaseUiScale: boolean
   canIncreaseUiScale: boolean
+  floatModeActive: boolean
+  onOpenFloatMode: () => void
 }
 
 function GearIcon() {
@@ -83,6 +85,8 @@ export function Header({
   onUiScaleIncrease,
   canDecreaseUiScale,
   canIncreaseUiScale,
+  floatModeActive,
+  onOpenFloatMode,
 }: HeaderProps) {
   const dailyMonsterIndex = getDailyMonsterIndex()
   const fileRef = useRef<HTMLInputElement>(null)
@@ -229,6 +233,15 @@ export function Header({
 
         <button type="button" className="header__reward" onClick={onRewardAll}>
           REWARD ALL
+        </button>
+
+        <button
+          type="button"
+          className={floatModeActive ? 'header__float header__float--active' : 'header__float'}
+          onClick={onOpenFloatMode}
+          aria-pressed={floatModeActive}
+        >
+          FLOAT
         </button>
 
         <div className="header__size" role="group" aria-label="Card size">
