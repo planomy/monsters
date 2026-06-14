@@ -3,6 +3,7 @@ import type { AppState } from '../types'
 import { normalizeState } from './normalize'
 
 const STORAGE_KEY = 'monsterz-app-state'
+export const APP_STATE_STORAGE_KEY = STORAGE_KEY
 const STORAGE_VERSION = 1
 
 export type StorageMode = 'local' | 'session' | 'memory'
@@ -64,12 +65,32 @@ function readRaw(): string | null {
   return memoryFallback
 }
 
+function mirrorStorageToLinkedWindows(value: string): void {
+  if (window.opener && !window.opener.closed) {
+    try {
+      window.opener.localStorage.setItem(STORAGE_KEY, value)
+    } catch {
+      /* PiP may not reach opener storage in some profiles */
+    }
+  }
+
+  const pipWindow = window.documentPictureInPicture?.window
+  if (pipWindow && !pipWindow.closed) {
+    try {
+      pipWindow.localStorage.setItem(STORAGE_KEY, value)
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
 function writeRaw(value: string): boolean {
   const local = activeStorage()
   if (local) {
     try {
       local.setItem(STORAGE_KEY, value)
       storageMode = 'local'
+      mirrorStorageToLinkedWindows(value)
       return true
     } catch {
       /* fall through */
@@ -79,6 +100,7 @@ function writeRaw(value: string): boolean {
   try {
     sessionStorage.setItem(STORAGE_KEY, value)
     storageMode = 'session'
+    mirrorStorageToLinkedWindows(value)
     return true
   } catch {
     /* fall through */

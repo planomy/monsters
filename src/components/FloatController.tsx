@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom'
 import { getDailyMonsterIndex } from '../utils/dailyMonster'
 import { FLOAT_SYNC_SOURCE, subscribeClassroomSync } from '../utils/classroomSync'
 import { PIP_WINDOW_W, pipPillWindowHeight } from '../utils/floatLayout'
-import { activateEmbeddedStorage, loadState } from '../utils/storage'
+import { activateEmbeddedStorage, APP_STATE_STORAGE_KEY, loadState } from '../utils/storage'
 import { commitIncrementTally } from '../utils/tallyActions'
 import {
   measureFloatContentHeight,
@@ -41,6 +41,16 @@ export function FloatController({ pipWindow }: FloatControllerProps) {
         window.setTimeout(() => setHighlightedStudentId(null), 2500)
       }
     })
+  }, [])
+
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== APP_STATE_STORAGE_KEY || !event.newValue) return
+      setState(loadState())
+    }
+
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
   }, [])
 
   const resizeToPill = useCallback(() => {

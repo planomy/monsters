@@ -9,7 +9,7 @@ import type { AppState, HistoryEntry, Student } from '../types'
 import { importFromJson } from '../utils/export'
 import { shuffle } from '../utils/random'
 import { MAIN_SYNC_SOURCE, notifyClassroomSync, subscribeClassroomSync } from '../utils/classroomSync'
-import { activateEmbeddedStorage, loadState, saveState } from '../utils/storage'
+import { activateEmbeddedStorage, APP_STATE_STORAGE_KEY, loadState, saveState } from '../utils/storage'
 import { applyIncrementTally } from '../utils/tallyActions'
 
 function presentStudents(students: Student[]) {
@@ -282,7 +282,7 @@ export function useMonsterz() {
 
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
-      if (event.key !== 'monsterz-app-state' || !event.newValue) return
+      if (event.key !== APP_STATE_STORAGE_KEY || !event.newValue) return
       if (saveTimer.current) {
         clearTimeout(saveTimer.current)
         saveTimer.current = null
@@ -293,6 +293,26 @@ export function useMonsterz() {
 
     window.addEventListener('storage', onStorage)
     return () => window.removeEventListener('storage', onStorage)
+  }, [])
+
+  useEffect(() => {
+    const poll = () => {
+      const pip = window.documentPictureInPicture?.window
+      if (!pip || pip.closed) return
+      const fresh = loadState()
+      setState((prev) => {
+        if (fresh.lastSaved === prev.lastSaved) return prev
+        if (saveTimer.current) {
+          clearTimeout(saveTimer.current)
+          saveTimer.current = null
+        }
+        queueMicrotask(() => setSaveStatus('saved'))
+        return fresh
+      })
+    }
+
+    const id = window.setInterval(poll, 300)
+    return () => window.clearInterval(id)
   }, [])
 
   useEffect(() => {

@@ -83,12 +83,7 @@ export function notifyClassroomSync(message: ClassroomSyncMessage): void {
 export function subscribeClassroomSync(
   listener: (message: ClassroomSyncMessage) => void,
 ): () => void {
-  let lastFingerprint = ''
-
   const deliver = (message: ClassroomSyncMessage) => {
-    const fingerprint = `${message.sourceId}|${message.state.lastSaved}|${message.highlightStudentId ?? ''}`
-    if (fingerprint === lastFingerprint) return
-    lastFingerprint = fingerprint
     listener(message)
   }
 
