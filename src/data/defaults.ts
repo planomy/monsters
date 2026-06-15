@@ -8,6 +8,10 @@ export function defaultStudentName(index: number): string {
   return `Student ${index + 1}`
 }
 
+export function isAssignedStudent(student: Student, index: number): boolean {
+  return student.name.trim() !== defaultStudentName(index)
+}
+
 export function createStudentForSlot(index: number): Student {
   return {
     id: `student-${index + 1}`,
@@ -24,11 +28,8 @@ export function createDefaultStudents(count = DEFAULT_CLASS_SIZE): Student[] {
 
 export function wouldLoseStudentData(students: Student[], newCount: number): boolean {
   if (newCount >= students.length) return false
-  return students.slice(newCount).some((student, offset) => {
-    const index = newCount + offset
-    return (
-      student.tally > 0 ||
-      student.name !== defaultStudentName(index)
-    )
-  })
+    return students.slice(newCount).some((student, offset) => {
+      const index = newCount + offset
+      return student.tally > 0 || isAssignedStudent(student, index)
+    })
 }

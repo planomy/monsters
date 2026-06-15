@@ -37,6 +37,8 @@ export function StudentCard({
   const inputRef = useRef<HTMLInputElement>(null)
   const prevTallyRef = useRef(student.tally)
   const isLoggedOn = student.tally > 0
+  const bothQuestionsAnswered =
+    pollQ1AnswerLabel != null && pollQ2AnswerLabel != null
 
   const isNameAreaTarget = (target: EventTarget | null) =>
     target instanceof Element && target.closest('.student-card__info') !== null
@@ -61,7 +63,7 @@ export function StudentCard({
       onIncrement(student.id)
       return
     }
-    if (onGreet) {
+    if (onGreet && !bothQuestionsAnswered) {
       onGreet(student.id, {
         x: e.clientX,
         y: e.clientY,
@@ -108,7 +110,7 @@ export function StudentCard({
       className={cardClass}
       onClick={handleClick}
       onContextMenu={(e) => {
-        if (floatMode || onGreet) {
+        if (floatMode || (onGreet && !bothQuestionsAnswered)) {
           e.preventDefault()
           return
         }
@@ -118,7 +120,7 @@ export function StudentCard({
       title={
         floatMode
           ? `${student.name} — click to +1`
-          : onGreet
+          : onGreet && !bothQuestionsAnswered
             ? 'Tap to greet and record answer · Double-click name to edit'
             : 'Click to +1 · Shift+click or right-click to −1 · Double-click name to edit'
       }

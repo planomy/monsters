@@ -27,6 +27,7 @@ interface HeaderProps {
   totalTallies: number
   presentCount: number
   absentCount: number
+  assignedCount: number
   saveStatus: 'saved' | 'saving' | 'idle'
   canUndo: boolean
   onClassNameChange: (name: string) => void
@@ -67,6 +68,7 @@ export function Header({
   totalTallies,
   presentCount,
   absentCount,
+  assignedCount,
   saveStatus,
   canUndo,
   onClassNameChange,
@@ -231,7 +233,17 @@ export function Header({
           {questionsExpanded ? 'Hide Questions' : 'Show Questions'}
         </button>
 
-        <button type="button" className="header__reward" onClick={onRewardAll}>
+        <button
+          type="button"
+          className="header__reward"
+          onClick={onRewardAll}
+          disabled={assignedCount === 0}
+          title={
+            assignedCount === 0
+              ? 'Rename at least one student to enable reward all'
+              : `Reward ${assignedCount} named students`
+          }
+        >
           REWARD ALL
         </button>
 

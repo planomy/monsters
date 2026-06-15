@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   createDefaultStudents,
   createStudentForSlot,
+  isAssignedStudent,
   MAX_CLASS_SIZE,
   MIN_CLASS_SIZE,
 } from '../data/defaults'
@@ -129,22 +130,31 @@ export function useMonsterz() {
 
   const rewardAll = useCallback(() => {
     updateState((prev) => {
+      const targets = prev.students
+        .map((student, index) => ({ student, index }))
+        .filter(({ student, index }) => isAssignedStudent(student, index))
+
+      if (targets.length === 0) return prev
+
       const timestamp = new Date().toISOString()
       setHistory((h) => [
         ...h.slice(-19),
         {
           type: 'batch',
-          students: prev.students.map((s) => ({
-            studentId: s.id,
-            previousTally: s.tally,
+          students: targets.map(({ student }) => ({
+            studentId: student.id,
+            previousTally: student.tally,
           })),
           timestamp,
         },
       ])
 
+      const targetIds = new Set(targets.map(({ student }) => student.id))
       return {
         ...prev,
-        students: prev.students.map((s) => ({ ...s, tally: s.tally + 1 })),
+        students: prev.students.map((s) =>
+          targetIds.has(s.id) ? { ...s, tally: s.tally + 1 } : s,
+        ),
       }
     })
   }, [updateState])
@@ -324,6 +334,7 @@ export function useMonsterz() {
   const totalTallies = state.students.reduce((sum, s) => sum + s.tally, 0)
   const presentCount = presentStudents(state.students).length
   const absentCount = state.students.length - presentCount
+  const assignedCount = state.students.filter((s, index) => isAssignedStudent(s, index)).length
 
   return {
     state,
@@ -332,6 +343,7 @@ export function useMonsterz() {
     totalTallies,
     presentCount,
     absentCount,
+    assignedCount,
     incrementTally,
     decrementTally,
     rewardAll,

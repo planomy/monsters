@@ -27,6 +27,7 @@ function App() {
     totalTallies,
     presentCount,
     absentCount,
+    assignedCount,
     incrementTally,
     decrementTally,
     rewardAll,
@@ -129,6 +130,7 @@ function App() {
         totalTallies={totalTallies}
         presentCount={presentCount}
         absentCount={absentCount}
+        assignedCount={assignedCount}
         saveStatus={saveStatus}
         canUndo={history.length > 0}
         onClassNameChange={setClassName}

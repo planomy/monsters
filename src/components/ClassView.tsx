@@ -88,8 +88,8 @@ export function ClassView({
                   }
                 : undefined
             }
-            onIncrement={questionsExpanded ? undefined : onIncrement}
-            onDecrement={questionsExpanded ? undefined : onDecrement}
+            onIncrement={onIncrement}
+            onDecrement={onDecrement}
             onRename={onRename}
           />
         </div>

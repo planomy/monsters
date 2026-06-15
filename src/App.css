@@ -291,6 +291,12 @@
   transform: scale(0.97);
 }
 
+.header__reward:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 .header__float {
   flex-shrink: 0;
   padding: 0.5rem 0.85rem;
