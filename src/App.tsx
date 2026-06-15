@@ -3,11 +3,13 @@ import { Header } from './components/Header'
 import { ClassView } from './components/ClassView'
 import { PickStudentModal } from './components/PickStudentModal'
 import { ShuffleOrderModal } from './components/ShuffleOrderModal'
+import { useClassLibrary } from './hooks/useClassLibrary'
 import { useFloatMode } from './hooks/useFloatMode'
 import { useMonsterz } from './hooks/useMonsterz'
 import { useMorningPoll } from './hooks/useMorningPoll'
 import { useTheme } from './hooks/useTheme'
 import { useUiScale } from './hooks/useUiScale'
+import { getVisibleStudents } from './data/defaults'
 import type { Student } from './types'
 import { MAIN_SYNC_SOURCE, subscribeClassroomSync } from './utils/classroomSync'
 import { loadQuestionsExpanded, saveQuestionsExpanded } from './utils/questionsExpanded'
@@ -38,12 +40,27 @@ function App() {
     resetToDefaults,
     manualSave,
     importState,
+    replaceState,
     setClassSize,
     pickRandomStudent,
     resetPickerCycle,
     shuffleClassOrder,
   } = useMonsterz()
   const pollApi = useMorningPoll()
+  const {
+    savedClasses,
+    activeClassId,
+    switchToClass,
+    createClass,
+    deleteClass,
+    renameClass,
+    duplicateClass,
+  } = useClassLibrary({
+    appState: state,
+    poll: pollApi.poll,
+    replaceAppState: replaceState,
+    replacePoll: pollApi.replacePoll,
+  })
   const {
     preference: themePreference,
     setPreference: setThemePreference,
@@ -114,12 +131,11 @@ function App() {
   const handleClassSizeChange = useCallback(
     (count: number) => {
       setClassSize(count)
-      if (count < state.students.length) {
-        pollApi.pruneResponses(new Set(state.students.slice(0, count).map((student) => student.id)))
-      }
     },
-    [pollApi, setClassSize, state.students],
+    [setClassSize],
   )
+
+  const visibleStudents = getVisibleStudents(state)
 
   return (
     <div className="app">
@@ -147,6 +163,13 @@ function App() {
           })
         }}
         onClassSizeChange={handleClassSizeChange}
+        savedClasses={savedClasses}
+        activeClassId={activeClassId}
+        onSwitchClass={switchToClass}
+        onNewClass={createClass}
+        onDeleteClass={deleteClass}
+        onRenameClass={renameClass}
+        onDuplicateClass={duplicateClass}
         themePreference={themePreference}
         onThemeChange={setThemePreference}
         onUiScaleDecrease={decreaseUiScale}
@@ -159,7 +182,7 @@ function App() {
 
       <main className="app__main">
         <ClassView
-          students={state.students}
+          students={visibleStudents}
           highlightedStudentId={highlightedStudentId}
           questionsExpanded={questionsExpanded}
           pollApi={pollApi}

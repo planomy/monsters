@@ -3,16 +3,17 @@ import type { ThemePreference } from '../hooks/useTheme'
 import {
   MAX_CLASS_SIZE,
   MIN_CLASS_SIZE,
-  wouldLoseStudentData,
 } from '../data/defaults'
 import type { AppState } from '../types'
+import type { SavedClass } from '../utils/classLibrary'
 import { getDailyMonsterIndex } from '../utils/dailyMonster'
 import { exportToCsv, exportToJson } from '../utils/export'
 import { activateEmbeddedStorage } from '../utils/storage'
 import { ConfirmModal } from './ConfirmModal'
 import { MonsterAvatar } from './MonsterAvatar'
+import { PromptModal } from './PromptModal'
 
-type ConfirmAction = 'reset-tallies' | 'reset-all' | 'shrink-class'
+type ConfirmAction = 'reset-tallies' | 'reset-all' | 'delete-class'
 
 const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
   { value: 'light', label: 'Light' },
@@ -40,6 +41,13 @@ interface HeaderProps {
   onResetAll: () => void
   onImport: (file: File) => void
   onClassSizeChange: (count: number) => void
+  savedClasses: SavedClass[]
+  activeClassId: string
+  onSwitchClass: (classId: string) => void
+  onNewClass: (name: string) => void
+  onDeleteClass: (classId: string) => boolean
+  onRenameClass: (classId: string, name: string) => boolean
+  onDuplicateClass: (classId: string, name: string) => boolean
   themePreference: ThemePreference
   onThemeChange: (theme: ThemePreference) => void
   onUiScaleDecrease: () => void
@@ -81,6 +89,13 @@ export function Header({
   onResetAll,
   onImport,
   onClassSizeChange,
+  savedClasses,
+  activeClassId,
+  onSwitchClass,
+  onNewClass,
+  onDeleteClass,
+  onRenameClass,
+  onDuplicateClass,
   themePreference,
   onThemeChange,
   onUiScaleDecrease,
@@ -95,9 +110,12 @@ export function Header({
   const menuRef = useRef<HTMLDivElement>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
-  const [pendingClassSize, setPendingClassSize] = useState<number | null>(null)
+  const [showNewClassPrompt, setShowNewClassPrompt] = useState(false)
+  const [pendingDeleteClassId, setPendingDeleteClassId] = useState<string | null>(null)
+  const [renameClassId, setRenameClassId] = useState<string | null>(null)
+  const [duplicateClassId, setDuplicateClassId] = useState<string | null>(null)
 
-  const classSize = state.students.length
+  const classSize = state.classSize
 
   const saveLabel =
     saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved' : 'Save'
@@ -143,11 +161,11 @@ export function Header({
     void activateEmbeddedStorage().finally(() => {
       if (confirmAction === 'reset-tallies') onResetTallies()
       if (confirmAction === 'reset-all') onResetAll()
-      if (confirmAction === 'shrink-class' && pendingClassSize !== null) {
-        onClassSizeChange(pendingClassSize)
+      if (confirmAction === 'delete-class' && pendingDeleteClassId) {
+        onDeleteClass(pendingDeleteClassId)
+        setPendingDeleteClassId(null)
       }
       setConfirmAction(null)
-      setPendingClassSize(null)
       closeMenu()
     })
   }
@@ -155,13 +173,6 @@ export function Header({
   const requestClassSize = (nextCount: number) => {
     if (nextCount === classSize) return
     if (nextCount < MIN_CLASS_SIZE || nextCount > MAX_CLASS_SIZE) return
-
-    if (nextCount < classSize && wouldLoseStudentData(state.students, nextCount)) {
-      setPendingClassSize(nextCount)
-      setConfirmAction('shrink-class')
-      return
-    }
-
     onClassSizeChange(nextCount)
   }
 
@@ -317,6 +328,7 @@ export function Header({
               <div className="header__menu-divider" role="separator" />
               <div className="header__class-size" role="group" aria-label="Students in class">
                 <span className="header__theme-label">Students in class</span>
+                <p className="header__class-size-hint">Hide extra cards; names and marks are kept.</p>
                 <div className="header__class-size-control">
                   <button
                     type="button"
@@ -340,6 +352,83 @@ export function Header({
                     +
                   </button>
                 </div>
+              </div>
+              <div className="header__menu-divider" role="separator" />
+              <div className="header__saved-classes" role="group" aria-label="Saved classes">
+                <span className="header__theme-label">Saved classes</span>
+                <p className="header__class-size-hint">Switch between classes; each keeps its own roster.</p>
+                <ul className="header__saved-list">
+                  {savedClasses.map((savedClass) => {
+                    const isActive = savedClass.id === activeClassId
+                    const deleteLabel = `Delete ${savedClass.name}`
+                    const renameLabel = `Rename ${savedClass.name}`
+                    const duplicateLabel = `Duplicate ${savedClass.name}`
+                    return (
+                      <li key={savedClass.id} className="header__saved-item">
+                        <button
+                          type="button"
+                          className={
+                            isActive
+                              ? 'header__saved-load header__saved-load--active'
+                              : 'header__saved-load'
+                          }
+                          aria-current={isActive ? 'true' : undefined}
+                          onClick={() => {
+                            if (!isActive) onSwitchClass(savedClass.id)
+                          }}
+                        >
+                          <span className="header__saved-name">{savedClass.name}</span>
+                          {isActive && (
+                            <span className="header__saved-badge" aria-hidden="true">
+                              Active
+                            </span>
+                          )}
+                        </button>
+                        <div className="header__saved-actions">
+                          <button
+                            type="button"
+                            className="header__saved-action"
+                            aria-label={renameLabel}
+                            title="Rename"
+                            onClick={() => setRenameClassId(savedClass.id)}
+                          >
+                            ✎
+                          </button>
+                          <button
+                            type="button"
+                            className="header__saved-action"
+                            aria-label={duplicateLabel}
+                            title="Duplicate"
+                            onClick={() => setDuplicateClassId(savedClass.id)}
+                          >
+                            ⧉
+                          </button>
+                          {savedClasses.length > 1 && (
+                            <button
+                              type="button"
+                              className="header__saved-action header__saved-action--danger"
+                              aria-label={deleteLabel}
+                              title="Delete"
+                              onClick={() => {
+                                setPendingDeleteClassId(savedClass.id)
+                                setConfirmAction('delete-class')
+                              }}
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+                <button
+                  type="button"
+                  className="header__saved-add"
+                  onClick={() => setShowNewClassPrompt(true)}
+                >
+                  + New class
+                </button>
               </div>
               <div className="header__menu-divider" role="separator" />
               <button
@@ -478,18 +567,67 @@ export function Header({
         />
       )}
 
-      {confirmAction === 'shrink-class' && pendingClassSize !== null && (
+      {confirmAction === 'delete-class' && pendingDeleteClassId && (
         <ConfirmModal
-          title="Remove student cards?"
-          message={`Lower the class to ${pendingClassSize} students? Cards at the end with names or marks will be removed.`}
-          confirmLabel="Remove cards"
+          title="Delete saved class?"
+          message={`Remove "${
+            savedClasses.find((entry) => entry.id === pendingDeleteClassId)?.name ?? 'this class'
+          }" from your saved classes? This cannot be undone.`}
+          confirmLabel="Delete class"
           onConfirm={runConfirmedAction}
           onCancel={() => {
             setConfirmAction(null)
-            setPendingClassSize(null)
+            setPendingDeleteClassId(null)
           }}
         />
       )}
+
+      {showNewClassPrompt && (
+        <PromptModal
+          title="New class"
+          message="Create a fresh roster. Your current class is saved automatically."
+          label="Class name"
+          defaultValue="New Class"
+          confirmLabel="Create class"
+          onConfirm={(name) => {
+            onNewClass(name)
+            setShowNewClassPrompt(false)
+            closeMenu()
+          }}
+          onCancel={() => setShowNewClassPrompt(false)}
+        />
+      )}
+
+      {renameClassId && (
+        <PromptModal
+          title="Rename class"
+          label="Class name"
+          defaultValue={savedClasses.find((entry) => entry.id === renameClassId)?.name ?? ''}
+          confirmLabel="Rename"
+          onConfirm={(name) => {
+            onRenameClass(renameClassId, name)
+            setRenameClassId(null)
+          }}
+          onCancel={() => setRenameClassId(null)}
+        />
+      )}
+
+      {duplicateClassId && (
+        <PromptModal
+          title="Duplicate class"
+          message="Copy this roster, tallies, and questions into a new saved class."
+          label="New class name"
+          defaultValue={`${savedClasses.find((entry) => entry.id === duplicateClassId)?.name ?? 'Class'} copy`}
+          confirmLabel="Duplicate"
+          onConfirm={(name) => {
+            onDuplicateClass(duplicateClassId, name)
+            setDuplicateClassId(null)
+            closeMenu()
+          }}
+          onCancel={() => setDuplicateClassId(null)}
+        />
+      )}
+
     </header>
   )
 }

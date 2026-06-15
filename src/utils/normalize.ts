@@ -1,3 +1,9 @@
+import {
+  DEFAULT_CLASS_SIZE,
+  ensureStudentSlots,
+  MAX_CLASS_SIZE,
+  MIN_CLASS_SIZE,
+} from '../data/defaults'
 import type { AppState, Student } from '../types'
 
 export function normalizeStudent(student: Student): Student {
@@ -5,8 +11,18 @@ export function normalizeStudent(student: Student): Student {
 }
 
 export function normalizeState(state: AppState): AppState {
+  const classSize = Math.min(
+    MAX_CLASS_SIZE,
+    Math.max(MIN_CLASS_SIZE, state.classSize ?? state.students.length ?? DEFAULT_CLASS_SIZE),
+  )
+  const students = ensureStudentSlots(
+    state.students.map(normalizeStudent),
+    MAX_CLASS_SIZE,
+  )
+
   return {
     ...state,
-    students: state.students.map(normalizeStudent),
+    classSize: Math.min(classSize, students.length),
+    students,
   }
 }

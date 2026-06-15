@@ -1,4 +1,5 @@
 import type { AppState, Student } from '../types'
+import { getVisibleStudents } from '../data/defaults'
 import { normalizeState } from './normalize'
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -18,17 +19,19 @@ function timestampSlug() {
 
 export function exportToJson(state: AppState) {
   const slug = state.className.replace(/\s+/g, '-').toLowerCase() || 'class'
+  const students = getVisibleStudents(state)
   const payload = {
     exportedAt: new Date().toISOString(),
     className: state.className,
-    students: state.students.map(({ id, name, tally, monsterIndex, absent }) => ({
+    classSize: state.classSize,
+    students: students.map(({ id, name, tally, monsterIndex, absent }) => ({
       id,
       name,
       tally,
       monsterIndex,
       absent,
     })),
-    totalTallies: state.students.reduce((sum, s) => sum + s.tally, 0),
+    totalTallies: students.reduce((sum, s) => sum + s.tally, 0),
   }
 
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
@@ -38,7 +41,7 @@ export function exportToJson(state: AppState) {
 export function exportToCsv(state: AppState) {
   const slug = state.className.replace(/\s+/g, '-').toLowerCase() || 'class'
   const header = 'Name,Tally,Monster,Student ID'
-  const rows = state.students.map(
+  const rows = getVisibleStudents(state).map(
     (s) => `"${s.name.replace(/"/g, '""')}",${s.tally},${s.monsterIndex},${s.id}`,
   )
   const csv = [header, ...rows].join('\n')
@@ -60,6 +63,7 @@ export async function importFromJson(file: File): Promise<AppState> {
   return normalizeState({
     className: parsed.className ?? 'My Class',
     students: parsed.students,
+    classSize: parsed.students.length,
     lastSaved: new Date().toISOString(),
   })
 }

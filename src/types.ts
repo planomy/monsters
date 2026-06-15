@@ -8,6 +8,8 @@ export interface Student {
 
 export interface AppState {
   students: Student[]
+  /** How many student cards are shown in the grid (1–40). */
+  classSize: number
   className: string
   lastSaved: string | null
 }

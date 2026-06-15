@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { getDailyMonsterIndex } from '../utils/dailyMonster'
+import { getVisibleStudents } from '../data/defaults'
 import { FLOAT_SYNC_SOURCE, subscribeClassroomSync } from '../utils/classroomSync'
 import { PIP_WINDOW_W, pipPillWindowHeight } from '../utils/floatLayout'
 import { activateEmbeddedStorage, APP_STATE_STORAGE_KEY, loadState } from '../utils/storage'
@@ -74,7 +75,7 @@ export function FloatController({ pipWindow }: FloatControllerProps) {
     if (!expanded) return
     resizeToPanel()
     pipWindow.requestAnimationFrame(resizeToPanel)
-  }, [expanded, state.students.length, resizeToPanel, pipWindow])
+  }, [expanded, state.classSize, resizeToPanel, pipWindow])
 
   const expand = () => {
     flushSync(() => setExpanded(true))
@@ -130,7 +131,7 @@ export function FloatController({ pipWindow }: FloatControllerProps) {
 
       <div className="float-panel__body">
         <FloatStudentGrid
-          students={state.students}
+          students={getVisibleStudents(state)}
           highlightedStudentId={highlightedStudentId}
           onIncrement={awardPoint}
         />

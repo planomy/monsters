@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   createDefaultStudents,
-  createStudentForSlot,
+  DEFAULT_CLASS_SIZE,
+  ensureStudentSlots,
+  getVisibleStudents,
   isAssignedStudent,
   MAX_CLASS_SIZE,
   MIN_CLASS_SIZE,
@@ -12,6 +14,7 @@ import { shuffle } from '../utils/random'
 import { MAIN_SYNC_SOURCE, notifyClassroomSync, subscribeClassroomSync } from '../utils/classroomSync'
 import { activateEmbeddedStorage, APP_STATE_STORAGE_KEY, loadState, saveState } from '../utils/storage'
 import { applyIncrementTally } from '../utils/tallyActions'
+import { normalizeState } from '../utils/normalize'
 
 function presentStudents(students: Student[]) {
   return students.filter((s) => s.tally > 0)
@@ -132,6 +135,7 @@ export function useMonsterz() {
     updateState((prev) => {
       const targets = prev.students
         .map((student, index) => ({ student, index }))
+        .filter(({ index }) => index < prev.classSize)
         .filter(({ student, index }) => isAssignedStudent(student, index))
 
       if (targets.length === 0) return prev
@@ -180,9 +184,12 @@ export function useMonsterz() {
     void activateEmbeddedStorage()
     let next!: AppState
     setState((prev) => {
+      const visibleIds = new Set(getVisibleStudents(prev).map((s) => s.id))
       next = {
         ...prev,
-        students: prev.students.map((s) => ({ ...s, tally: 0 })),
+        students: prev.students.map((s) =>
+          visibleIds.has(s.id) ? { ...s, tally: 0 } : s,
+        ),
       }
       return next
     })
@@ -191,11 +198,12 @@ export function useMonsterz() {
   }, [commitSave])
 
   const resetToDefaults = useCallback(() => {
-    const next: AppState = {
+    const next: AppState = normalizeState({
       className: 'My Class',
       students: createDefaultStudents(),
+      classSize: DEFAULT_CLASS_SIZE,
       lastSaved: null,
-    }
+    })
     commitSave(next)
     setHistory([])
     pickerPoolRef.current = []
@@ -215,30 +223,32 @@ export function useMonsterz() {
     [commitSave],
   )
 
+  const replaceState = useCallback(
+    (next: AppState) => {
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current)
+        saveTimer.current = null
+      }
+      const saved = commitSave(normalizeState(next))
+      setHistory([])
+      pickerPoolRef.current = []
+      return saved
+    },
+    [commitSave],
+  )
+
   const setClassSize = useCallback(
     (newCount: number) => {
       const clamped = Math.min(MAX_CLASS_SIZE, Math.max(MIN_CLASS_SIZE, newCount))
 
       updateState((prev) => {
-        const current = prev.students.length
-        if (clamped === current) return prev
+        if (clamped === prev.classSize) return prev
 
-        const validIds = new Set<string>()
-
-        if (clamped > current) {
-          const added = Array.from({ length: clamped - current }, (_, offset) =>
-            createStudentForSlot(current + offset),
-          )
-          const students = [...prev.students, ...added]
-          students.forEach((s) => validIds.add(s.id))
-          pickerPoolRef.current = pickerPoolRef.current.filter((id) => validIds.has(id))
-          return { ...prev, students }
-        }
-
-        const students = prev.students.slice(0, clamped)
-        students.forEach((s) => validIds.add(s.id))
+        const students = ensureStudentSlots(prev.students, Math.max(clamped, prev.students.length))
+        const validIds = new Set(students.slice(0, clamped).map((s) => s.id))
         pickerPoolRef.current = pickerPoolRef.current.filter((id) => validIds.has(id))
-        return { ...prev, students }
+
+        return { ...prev, classSize: clamped, students }
       })
     },
     [updateState],
@@ -249,7 +259,7 @@ export function useMonsterz() {
     remaining: number
     cycleSize: number
   } => {
-    const present = presentStudents(state.students)
+    const present = presentStudents(getVisibleStudents(state))
     const cycleSize = present.length
     if (!cycleSize) {
       return { student: null, remaining: 0, cycleSize: 0 }
@@ -265,15 +275,15 @@ export function useMonsterz() {
     pickerPoolRef.current = pool.slice(1)
     const student = state.students.find((s) => s.id === pickedId) ?? null
     return { student, remaining: pickerPoolRef.current.length, cycleSize }
-  }, [state.students])
+  }, [state.classSize, state.students])
 
   const resetPickerCycle = useCallback(() => {
     pickerPoolRef.current = []
   }, [])
 
   const shuffleClassOrder = useCallback((): Student[] => {
-    return shuffle(presentStudents(state.students))
-  }, [state.students])
+    return shuffle(presentStudents(getVisibleStudents(state)))
+  }, [state.classSize, state.students])
 
   useEffect(() => {
     return subscribeClassroomSync((message) => {
@@ -331,10 +341,13 @@ export function useMonsterz() {
     }
   }, [])
 
-  const totalTallies = state.students.reduce((sum, s) => sum + s.tally, 0)
-  const presentCount = presentStudents(state.students).length
-  const absentCount = state.students.length - presentCount
-  const assignedCount = state.students.filter((s, index) => isAssignedStudent(s, index)).length
+  const visibleStudents = getVisibleStudents(state)
+  const totalTallies = visibleStudents.reduce((sum, s) => sum + s.tally, 0)
+  const presentCount = presentStudents(visibleStudents).length
+  const absentCount = visibleStudents.length - presentCount
+  const assignedCount = state.students
+    .slice(0, state.classSize)
+    .filter((student, index) => isAssignedStudent(student, index)).length
 
   return {
     state,
@@ -354,6 +367,7 @@ export function useMonsterz() {
     resetToDefaults,
     manualSave,
     importState,
+    replaceState,
     setClassSize,
     pickRandomStudent,
     resetPickerCycle,

@@ -1,4 +1,4 @@
-import type { Student } from '../types'
+import type { AppState, Student } from '../types'
 
 export const DEFAULT_CLASS_SIZE = 30
 export const MIN_CLASS_SIZE = 1
@@ -26,10 +26,16 @@ export function createDefaultStudents(count = DEFAULT_CLASS_SIZE): Student[] {
   return Array.from({ length: count }, (_, index) => createStudentForSlot(index))
 }
 
-export function wouldLoseStudentData(students: Student[], newCount: number): boolean {
-  if (newCount >= students.length) return false
-    return students.slice(newCount).some((student, offset) => {
-      const index = newCount + offset
-      return student.tally > 0 || isAssignedStudent(student, index)
-    })
+export function ensureStudentSlots(students: Student[], minSlots: number): Student[] {
+  if (students.length >= minSlots) return students
+  return [
+    ...students,
+    ...Array.from({ length: minSlots - students.length }, (_, offset) =>
+      createStudentForSlot(students.length + offset),
+    ),
+  ]
+}
+
+export function getVisibleStudents(state: AppState): Student[] {
+  return state.students.slice(0, state.classSize)
 }

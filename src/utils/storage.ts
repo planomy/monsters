@@ -1,4 +1,4 @@
-import { createDefaultStudents } from '../data/defaults'
+import { createDefaultStudents, DEFAULT_CLASS_SIZE } from '../data/defaults'
 import type { AppState } from '../types'
 import { normalizeState } from './normalize'
 
@@ -156,29 +156,32 @@ export function loadState(): AppState {
   try {
     const raw = readRaw()
     if (!raw) {
-      return {
+      return normalizeState({
         students: createDefaultStudents(),
+        classSize: DEFAULT_CLASS_SIZE,
         className: 'My Class',
         lastSaved: null,
-      }
+      })
     }
 
     const parsed = JSON.parse(raw) as StoredPayload
     if (parsed.version !== STORAGE_VERSION || !parsed.state?.students?.length) {
-      return {
+      return normalizeState({
         students: createDefaultStudents(),
+        classSize: DEFAULT_CLASS_SIZE,
         className: parsed.state?.className ?? 'My Class',
         lastSaved: null,
-      }
+      })
     }
 
     return normalizeState(parsed.state)
   } catch {
-    return {
+    return normalizeState({
       students: createDefaultStudents(),
+      classSize: DEFAULT_CLASS_SIZE,
       className: 'My Class',
       lastSaved: null,
-    }
+    })
   }
 }
 
