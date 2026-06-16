@@ -10,10 +10,13 @@ import {
 } from '../data/defaults'
 import type { AppState, HistoryEntry, Student } from '../types'
 import { importFromJson } from '../utils/export'
+import { pickRandomStudentFromState } from '../utils/pickerActions'
+import { loadPickerPool, resetPickerPool, savePickerPool } from '../utils/pickerPool'
 import { shuffle } from '../utils/random'
 import { MAIN_SYNC_SOURCE, notifyClassroomSync, subscribeClassroomSync } from '../utils/classroomSync'
 import { activateEmbeddedStorage, APP_STATE_STORAGE_KEY, loadState, saveState } from '../utils/storage'
-import { applyIncrementTally } from '../utils/tallyActions'
+import { applyIncrementTally, applyRewardAll } from '../utils/tallyActions'
+import { mergeFloatSyncState, shouldMergeFloatSync } from '../utils/stateMerge'
 import { normalizeState } from '../utils/normalize'
 
 function presentStudents(students: Student[]) {
@@ -25,7 +28,6 @@ export function useMonsterz() {
   const [history, setHistory] = useState<HistoryEntry[]>([])
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'idle'>('idle')
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const pickerPoolRef = useRef<string[]>([])
 
   const commitSave = useCallback((next: AppState) => {
     if (saveTimer.current) {
@@ -133,12 +135,13 @@ export function useMonsterz() {
 
   const rewardAll = useCallback(() => {
     updateState((prev) => {
-      const targets = prev.students
-        .map((student, index) => ({ student, index }))
-        .filter(({ index }) => index < prev.classSize)
-        .filter(({ student, index }) => isAssignedStudent(student, index))
+      const next = applyRewardAll(prev)
+      if (!next) return prev
 
-      if (targets.length === 0) return prev
+      const targets = prev.students
+        .slice(0, prev.classSize)
+        .map((student, index) => ({ student, index }))
+        .filter(({ student, index }) => isAssignedStudent(student, index))
 
       const timestamp = new Date().toISOString()
       setHistory((h) => [
@@ -153,13 +156,7 @@ export function useMonsterz() {
         },
       ])
 
-      const targetIds = new Set(targets.map(({ student }) => student.id))
-      return {
-        ...prev,
-        students: prev.students.map((s) =>
-          targetIds.has(s.id) ? { ...s, tally: s.tally + 1 } : s,
-        ),
-      }
+      return next
     })
   }, [updateState])
 
@@ -206,7 +203,7 @@ export function useMonsterz() {
     })
     commitSave(next)
     setHistory([])
-    pickerPoolRef.current = []
+    resetPickerPool()
   }, [commitSave])
 
   const manualSave = useCallback(() => {
@@ -218,7 +215,7 @@ export function useMonsterz() {
       const imported = await importFromJson(file)
       commitSave(imported)
       setHistory([])
-      pickerPoolRef.current = []
+      resetPickerPool()
     },
     [commitSave],
   )
@@ -231,7 +228,7 @@ export function useMonsterz() {
       }
       const saved = commitSave(normalizeState(next))
       setHistory([])
-      pickerPoolRef.current = []
+      resetPickerPool()
       return saved
     },
     [commitSave],
@@ -246,7 +243,7 @@ export function useMonsterz() {
 
         const students = ensureStudentSlots(prev.students, Math.max(clamped, prev.students.length))
         const validIds = new Set(students.slice(0, clamped).map((s) => s.id))
-        pickerPoolRef.current = pickerPoolRef.current.filter((id) => validIds.has(id))
+        savePickerPool(loadPickerPool().filter((id) => validIds.has(id)))
 
         return { ...prev, classSize: clamped, students }
       })
@@ -254,31 +251,21 @@ export function useMonsterz() {
     [updateState],
   )
 
-  const pickRandomStudent = useCallback((): {
-    student: Student | null
-    remaining: number
-    cycleSize: number
-  } => {
-    const present = presentStudents(getVisibleStudents(state))
-    const cycleSize = present.length
-    if (!cycleSize) {
-      return { student: null, remaining: 0, cycleSize: 0 }
+  const pickRandomStudent = useCallback(() => {
+    const result = pickRandomStudentFromState(state)
+    if (result.student) {
+      notifyClassroomSync({
+        type: 'state',
+        sourceId: MAIN_SYNC_SOURCE,
+        state,
+        highlightStudentId: result.student.id,
+      })
     }
-
-    const presentIds = new Set(present.map((s) => s.id))
-    let pool = pickerPoolRef.current.filter((id) => presentIds.has(id))
-    if (!pool.length) {
-      pool = shuffle(present.map((s) => s.id))
-    }
-
-    const pickedId = pool[0]
-    pickerPoolRef.current = pool.slice(1)
-    const student = state.students.find((s) => s.id === pickedId) ?? null
-    return { student, remaining: pickerPoolRef.current.length, cycleSize }
-  }, [state.classSize, state.students])
+    return result
+  }, [state])
 
   const resetPickerCycle = useCallback(() => {
-    pickerPoolRef.current = []
+    resetPickerPool()
   }, [])
 
   const shuffleClassOrder = useCallback((): Student[] => {
@@ -294,9 +281,15 @@ export function useMonsterz() {
         saveTimer.current = null
       }
 
-      const saved = saveState(message.state)
-      setState(saved)
-      setSaveStatus('saved')
+      setState((prev) => {
+        const incoming = message.state
+        const merged = shouldMergeFloatSync(message.sourceId, prev, incoming)
+          ? mergeFloatSyncState(prev, incoming)
+          : incoming
+        const saved = saveState(merged)
+        setSaveStatus('saved')
+        return saved
+      })
     })
   }, [])
 

@@ -51,11 +51,146 @@
 .float-panel__head {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  gap: 4px;
   flex-shrink: 0;
   width: 240px;
-  height: 28px;
+  min-height: 28px;
+  padding: 0 4px;
   background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
+}
+
+.float-panel__tools {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.float-panel__tool {
+  flex: 1;
+  min-width: 0;
+  height: 20px;
+  margin: 0;
+  padding: 0 4px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.float-panel__tool:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.float-panel__tool:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.float-panel__tool--reward {
+  font-size: 7px;
+}
+
+.float-panel__pick {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 240px;
+  min-height: 34px;
+  padding: 4px 34px 4px 6px;
+  background: rgba(124, 58, 237, 0.16);
+  border-bottom: 1px solid rgba(124, 58, 237, 0.22);
+}
+
+.float-panel__pick-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: 100%;
+  min-width: 0;
+  text-align: center;
+}
+
+.float-panel__pick-actions {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.float-panel__pick-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.float-panel__pick-action:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.float-panel__pick-action:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.float-panel__pick-action-icon {
+  width: 10px;
+  height: 10px;
+}
+
+.float-panel__pick-action--close {
+  font-size: 11px;
+}
+
+.float-panel__pick-label {
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.float-panel__pick-name {
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.15;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.float-panel__pick-meta {
+  font-size: 7px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.58);
+  line-height: 1.2;
 }
 
 .float-panel__minimize {
@@ -71,6 +206,7 @@
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .float-panel__body {

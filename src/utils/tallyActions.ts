@@ -1,6 +1,7 @@
 import type { AppState } from '../types'
+import { isAssignedStudent } from '../data/defaults'
 import { notifyClassroomSync, type ClassroomSyncMessage } from './classroomSync'
-import { saveState } from './storage'
+import { loadState, saveState } from './storage'
 
 export function applyIncrementTally(state: AppState, studentId: string): AppState | null {
   const student = state.students.find((s) => s.id === studentId)
@@ -15,11 +16,12 @@ export function applyIncrementTally(state: AppState, studentId: string): AppStat
 }
 
 export function commitIncrementTally(
-  state: AppState,
   studentId: string,
   sourceId: string,
+  state?: AppState,
 ): AppState | null {
-  const next = applyIncrementTally(state, studentId)
+  const base = state ?? loadState()
+  const next = applyIncrementTally(base, studentId)
   if (!next) return null
 
   const saved = saveState(next)
@@ -30,5 +32,32 @@ export function commitIncrementTally(
     highlightStudentId: studentId,
   }
   notifyClassroomSync(message)
+  return saved
+}
+
+export function applyRewardAll(state: AppState): AppState | null {
+  const targets = state.students
+    .slice(0, state.classSize)
+    .map((student, index) => ({ student, index }))
+    .filter(({ student, index }) => isAssignedStudent(student, index))
+
+  if (targets.length === 0) return null
+
+  const targetIds = new Set(targets.map(({ student }) => student.id))
+  return {
+    ...state,
+    students: state.students.map((s) =>
+      targetIds.has(s.id) ? { ...s, tally: s.tally + 1 } : s,
+    ),
+  }
+}
+
+export function commitRewardAll(sourceId: string, state?: AppState): AppState | null {
+  const base = state ?? loadState()
+  const next = applyRewardAll(base)
+  if (!next) return null
+
+  const saved = saveState(next)
+  notifyClassroomSync({ type: 'state', sourceId, state: saved })
   return saved
 }
