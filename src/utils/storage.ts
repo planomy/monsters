@@ -152,6 +152,39 @@ export async function activateEmbeddedStorage(): Promise<boolean> {
   return false
 }
 
+export function loadStateFromWindow(target: Window): AppState | null {
+  try {
+    const raw = target.localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+
+    const parsed = JSON.parse(raw) as StoredPayload
+    if (parsed.version !== STORAGE_VERSION || !parsed.state?.students?.length) {
+      return null
+    }
+
+    return normalizeState(parsed.state)
+  } catch {
+    return null
+  }
+}
+
+export function shouldAcceptSyncedState(prev: AppState, incoming: AppState): boolean {
+  if (incoming.classSize > prev.classSize) return true
+  if (incoming.classSize < prev.classSize) return false
+  if (incoming.lastSaved && prev.lastSaved && incoming.lastSaved > prev.lastSaved) return true
+  if (incoming.lastSaved && !prev.lastSaved) return true
+  if (!incoming.lastSaved && prev.lastSaved) return false
+  return stateRevision(incoming) !== stateRevision(prev)
+}
+
+export function stateRevision(state: AppState): string {
+  const roster = state.students
+    .slice(0, state.classSize)
+    .map((student) => `${student.id}:${student.tally}:${student.name}`)
+    .join('|')
+  return `${state.classSize}:${state.lastSaved ?? ''}:${roster}`
+}
+
 export function loadState(): AppState {
   try {
     const raw = readRaw()

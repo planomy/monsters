@@ -1,10 +1,16 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import type { AppState } from '../types'
 import { flushSync } from 'react-dom'
 import { getDailyMonsterIndex } from '../utils/dailyMonster'
 import { getVisibleStudents, isAssignedStudent } from '../data/defaults'
+import {
+  loadStateForContext,
+  registerPipStateApplier,
+  requestFreshStateFromMain,
+} from '../utils/floatBridge'
 import { FLOAT_SYNC_SOURCE, subscribeClassroomSync } from '../utils/classroomSync'
 import { PIP_WINDOW_W, pipPillWindowHeight } from '../utils/floatLayout'
-import { activateEmbeddedStorage, APP_STATE_STORAGE_KEY, loadState } from '../utils/storage'
+import { activateEmbeddedStorage, APP_STATE_STORAGE_KEY, shouldAcceptSyncedState, stateRevision } from '../utils/storage'
 import { commitIncrementTally, commitRewardAll } from '../utils/tallyActions'
 import { commitPickStudent, type PickResult } from '../utils/pickerActions'
 import {
@@ -27,7 +33,8 @@ export function FloatController({ pipWindow }: FloatControllerProps) {
   const [scrollable, setScrollable] = useState(false)
   const [highlightedStudentId, setHighlightedStudentId] = useState<string | null>(null)
   const [pickResult, setPickResult] = useState<PickResult | null>(null)
-  const [state, setState] = useState(() => loadState())
+  const [state, setState] = useState(() => loadStateForContext())
+  const stateRevisionRef = useRef(stateRevision(loadStateForContext()))
   const panelRef = useRef<HTMLDivElement>(null)
   const dailyMonsterIndex = getDailyMonsterIndex()
   const visibleStudents = useMemo(() => getVisibleStudents(state), [state])
@@ -52,25 +59,54 @@ export function FloatController({ pipWindow }: FloatControllerProps) {
     void activateEmbeddedStorage()
   }, [])
 
+  const applySyncedState = useCallback((fresh: AppState) => {
+    setState((prev) => {
+      if (!shouldAcceptSyncedState(prev, fresh)) return prev
+      stateRevisionRef.current = stateRevision(fresh)
+      return fresh
+    })
+  }, [])
+
+  useEffect(() => {
+    return registerPipStateApplier((fresh) => {
+      applySyncedState(fresh)
+    })
+  }, [applySyncedState])
+
   useEffect(() => {
     return subscribeClassroomSync((message) => {
+      if (message.type !== 'state') return
       if (message.sourceId === FLOAT_SYNC_SOURCE) return
-      setState(message.state)
+      applySyncedState(message.state)
       if (message.highlightStudentId) {
         highlightStudent(message.highlightStudentId)
       }
     })
-  }, [highlightStudent])
+  }, [applySyncedState, highlightStudent])
 
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
       if (event.key !== APP_STATE_STORAGE_KEY || !event.newValue) return
-      setState(loadState())
+      applySyncedState(loadStateForContext())
     }
 
     window.addEventListener('storage', onStorage)
     return () => window.removeEventListener('storage', onStorage)
-  }, [])
+  }, [applySyncedState])
+
+  useEffect(() => {
+    const poll = () => {
+      requestFreshStateFromMain()
+      const fresh = loadStateForContext()
+      const revision = stateRevision(fresh)
+      if (revision === stateRevisionRef.current) return
+      applySyncedState(fresh)
+    }
+
+    poll()
+    const id = window.setInterval(poll, 300)
+    return () => window.clearInterval(id)
+  }, [applySyncedState])
 
   const resizeToPill = useCallback(() => {
     setScrollable(false)

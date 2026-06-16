@@ -1,8 +1,8 @@
 import { getVisibleStudents } from '../data/defaults'
 import type { AppState, Student } from '../types'
-import { notifyClassroomSync, type ClassroomSyncMessage } from './classroomSync'
+import { notifyClassroomSync, type ClassroomStateMessage } from './classroomSync'
 import { loadPickerPool, savePickerPool } from './pickerPool'
-import { loadState } from './storage'
+import { loadStateForContext } from './floatBridge'
 import { shuffle } from './random'
 
 function presentStudents(students: Student[]) {
@@ -40,9 +40,9 @@ export function commitPickStudent(
   sourceId: string,
   state?: AppState,
 ): { state: AppState; result: PickResult } {
-  const base = state ?? loadState()
+  const base = state ?? loadStateForContext()
   const result = pickRandomStudentFromState(base)
-  const message: ClassroomSyncMessage = {
+  const message: ClassroomStateMessage = {
     type: 'state',
     sourceId,
     state: base,

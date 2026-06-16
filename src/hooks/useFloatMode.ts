@@ -7,11 +7,13 @@ import {
   isDocumentPiPSupported,
   MAIN_SYNC_SOURCE,
   notifyClassroomSync,
+  publishMainState,
   registerPipWindow,
 } from '../utils/classroomSync'
 import { pipPillWindowHeight } from '../utils/floatLayout'
 import { PIP_PILL_SIZE } from '../utils/pipWindowSize'
 import { activateEmbeddedStorage, loadState } from '../utils/storage'
+import { pushStateToPipWindow } from '../utils/floatBridge'
 
 const UNSUPPORTED_MESSAGE = 'Float Mode works in Chrome or Edge.'
 
@@ -62,6 +64,7 @@ export function useFloatMode() {
       pipWindow.document.title = 'Monsterz Float'
       pipWindowRef.current = pipWindow
       attachMainWindowToPip(pipWindow)
+      publishMainState(loadState())
       copyStylesToWindow(pipWindow)
       await waitForPiPStyles(pipWindow)
 
@@ -71,6 +74,10 @@ export function useFloatMode() {
 
       pipRootRef.current = createRoot(mount)
       pipRootRef.current.render(createElement(FloatController, { pipWindow }))
+
+      requestAnimationFrame(() => {
+        pushStateToPipWindow(loadState())
+      })
 
       notifyClassroomSync({
         type: 'state',

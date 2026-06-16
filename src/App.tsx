@@ -96,6 +96,7 @@ function App() {
 
   useEffect(() => {
     return subscribeClassroomSync((message) => {
+      if (message.type !== 'state') return
       if (message.sourceId === MAIN_SYNC_SOURCE) return
       if (message.highlightStudentId) highlightStudent(message.highlightStudentId)
     })

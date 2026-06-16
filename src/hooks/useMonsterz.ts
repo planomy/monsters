@@ -13,11 +13,15 @@ import { importFromJson } from '../utils/export'
 import { pickRandomStudentFromState } from '../utils/pickerActions'
 import { loadPickerPool, resetPickerPool, savePickerPool } from '../utils/pickerPool'
 import { shuffle } from '../utils/random'
-import { MAIN_SYNC_SOURCE, notifyClassroomSync, subscribeClassroomSync } from '../utils/classroomSync'
+import { FLOAT_SYNC_SOURCE, MAIN_SYNC_SOURCE, notifyClassroomSync, publishMainState, subscribeClassroomSync } from '../utils/classroomSync'
 import { activateEmbeddedStorage, APP_STATE_STORAGE_KEY, loadState, saveState } from '../utils/storage'
 import { applyIncrementTally, applyRewardAll } from '../utils/tallyActions'
 import { mergeFloatSyncState, shouldMergeFloatSync } from '../utils/stateMerge'
 import { normalizeState } from '../utils/normalize'
+import {
+  pushStateToPipWindow,
+  registerMainStateAccessor,
+} from '../utils/floatBridge'
 
 function presentStudents(students: Student[]) {
   return students.filter((s) => s.tally > 0)
@@ -28,6 +32,8 @@ export function useMonsterz() {
   const [history, setHistory] = useState<HistoryEntry[]>([])
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'idle'>('idle')
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const stateRef = useRef(state)
+  stateRef.current = state
 
   const commitSave = useCallback((next: AppState) => {
     if (saveTimer.current) {
@@ -273,7 +279,27 @@ export function useMonsterz() {
   }, [state.classSize, state.students])
 
   useEffect(() => {
+    return registerMainStateAccessor(() => stateRef.current)
+  }, [])
+
+  useEffect(() => {
+    publishMainState(state)
+    pushStateToPipWindow(state)
+  }, [state])
+
+  useEffect(() => {
     return subscribeClassroomSync((message) => {
+      if (message.type === 'request-state') {
+        if (message.sourceId === FLOAT_SYNC_SOURCE) {
+          notifyClassroomSync({
+            type: 'state',
+            sourceId: MAIN_SYNC_SOURCE,
+            state: stateRef.current,
+          })
+        }
+        return
+      }
+
       if (message.sourceId === MAIN_SYNC_SOURCE) return
 
       if (saveTimer.current) {

@@ -3,17 +3,33 @@ import type { AppState } from '../types'
 export const MAIN_SYNC_SOURCE = 'main-app'
 export const FLOAT_SYNC_SOURCE = 'float-pip'
 
-export interface ClassroomSyncMessage {
+/** Set on the PiP window when opened so sync works even if `window.opener` is null. */
+export const PIP_MAIN_WINDOW_KEY = '__monsterzMainWindow'
+
+/** Latest roster on the main tab — PiP reads this when storage is partitioned. */
+export const MAIN_PUBLISHED_STATE_KEY = '__monsterzPublishedState'
+
+/** Main exposes live roster getter for PiP cross-window reads. */
+export const MAIN_GET_STATE_KEY = '__monsterzGetState'
+
+/** PiP exposes apply callback so main can push roster directly. */
+export const PIP_APPLY_STATE_KEY = '__monsterzApplyState'
+
+export interface ClassroomStateMessage {
   type: 'state'
   sourceId: string
   state: AppState
   highlightStudentId?: string
 }
 
-const CHANNEL_NAME = 'monsterz-classroom-sync'
+export interface ClassroomRequestStateMessage {
+  type: 'request-state'
+  sourceId: string
+}
 
-/** Set on the PiP window when opened so sync works even if `window.opener` is null. */
-export const PIP_MAIN_WINDOW_KEY = '__monsterzMainWindow'
+export type ClassroomSyncMessage = ClassroomStateMessage | ClassroomRequestStateMessage
+
+const CHANNEL_NAME = 'monsterz-classroom-sync'
 
 let channel: BroadcastChannel | null = null
 let pipWindowRef: Window | null = null
@@ -24,17 +40,30 @@ function getChannel(): BroadcastChannel | null {
   return channel
 }
 
-function isSyncMessage(data: unknown): data is ClassroomSyncMessage {
+function isStateMessage(data: unknown): data is ClassroomStateMessage {
   return (
     typeof data === 'object' &&
     data !== null &&
-    (data as ClassroomSyncMessage).type === 'state' &&
-    typeof (data as ClassroomSyncMessage).sourceId === 'string' &&
-    (data as ClassroomSyncMessage).state != null
+    (data as ClassroomStateMessage).type === 'state' &&
+    typeof (data as ClassroomStateMessage).sourceId === 'string' &&
+    (data as ClassroomStateMessage).state != null
   )
 }
 
-function getMainWindow(): Window | null {
+function isRequestStateMessage(data: unknown): data is ClassroomRequestStateMessage {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    (data as ClassroomRequestStateMessage).type === 'request-state' &&
+    typeof (data as ClassroomRequestStateMessage).sourceId === 'string'
+  )
+}
+
+function isSyncMessage(data: unknown): data is ClassroomSyncMessage {
+  return isStateMessage(data) || isRequestStateMessage(data)
+}
+
+export function getLinkedMainWindow(): Window | null {
   const tagged = (window as Window & { [PIP_MAIN_WINDOW_KEY]?: Window })[PIP_MAIN_WINDOW_KEY]
   if (tagged && !tagged.closed) return tagged
   if (window.opener && !window.opener.closed) return window.opener
@@ -57,12 +86,43 @@ export function attachMainWindowToPip(pipWindow: Window, mainWindow: Window = wi
   registerPipWindow(pipWindow)
 }
 
-/** Push state to all other Monsterz contexts (main tab, PiP float, etc.). */
-export function notifyClassroomSync(message: ClassroomSyncMessage): void {
+export function publishMainState(state: AppState): void {
+  ;(window as Window & { [MAIN_PUBLISHED_STATE_KEY]?: AppState })[MAIN_PUBLISHED_STATE_KEY] = state
+}
+
+export function readPublishedMainState(main: Window): AppState | null {
+  const state = (main as Window & { [MAIN_PUBLISHED_STATE_KEY]?: AppState })[MAIN_PUBLISHED_STATE_KEY]
+  return state ?? null
+}
+
+export function requestStateFromMain(): void {
+  const main = getLinkedMainWindow()
+  const message: ClassroomRequestStateMessage = {
+    type: 'request-state',
+    sourceId: FLOAT_SYNC_SOURCE,
+  }
+
   getChannel()?.postMessage(message)
 
-  const main = getMainWindow()
   if (main) {
+    try {
+      main.postMessage(message, window.location.origin)
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+/** Push state to all other Monsterz contexts (main tab, PiP float, etc.). */
+export function notifyClassroomSync(message: ClassroomStateMessage): void {
+  if (message.sourceId === MAIN_SYNC_SOURCE) {
+    publishMainState(message.state)
+  }
+
+  getChannel()?.postMessage(message)
+
+  const main = getLinkedMainWindow()
+  if (main && main !== window) {
     try {
       main.postMessage(message, window.location.origin)
     } catch {

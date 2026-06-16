@@ -1,7 +1,8 @@
 import type { AppState } from '../types'
 import { isAssignedStudent } from '../data/defaults'
-import { notifyClassroomSync, type ClassroomSyncMessage } from './classroomSync'
-import { loadState, saveState } from './storage'
+import { notifyClassroomSync, type ClassroomStateMessage } from './classroomSync'
+import { loadStateForContext } from './floatBridge'
+import { saveState } from './storage'
 
 export function applyIncrementTally(state: AppState, studentId: string): AppState | null {
   const student = state.students.find((s) => s.id === studentId)
@@ -20,12 +21,12 @@ export function commitIncrementTally(
   sourceId: string,
   state?: AppState,
 ): AppState | null {
-  const base = state ?? loadState()
+  const base = state ?? loadStateForContext()
   const next = applyIncrementTally(base, studentId)
   if (!next) return null
 
   const saved = saveState(next)
-  const message: ClassroomSyncMessage = {
+  const message: ClassroomStateMessage = {
     type: 'state',
     sourceId,
     state: saved,
@@ -53,7 +54,7 @@ export function applyRewardAll(state: AppState): AppState | null {
 }
 
 export function commitRewardAll(sourceId: string, state?: AppState): AppState | null {
-  const base = state ?? loadState()
+  const base = state ?? loadStateForContext()
   const next = applyRewardAll(base)
   if (!next) return null
 
