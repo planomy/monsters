@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react'
+import type { CSSProperties } from 'react'
 import './App.css'
+import './SkyDrop.css'
 
 type Screen = 'home' | 'builder' | 'players' | 'question' | 'drop' | 'results'
 type Question = { prompt: string; options: string[]; answer: string }
 type QuestionSet = { title: string; subject: string; yearLevel: string; questions: Question[] }
+type Reward = { icon: string; name: string }
+type AudioWindow = Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext }
 
 const SAMPLE_SET: QuestionSet = {
   title: 'Fraction Foundations', subject: 'Mathematics', yearLevel: 'Year 5',
@@ -17,6 +21,27 @@ const SAMPLE_SET: QuestionSet = {
 
 const STARTER_JSON = JSON.stringify(SAMPLE_SET, null, 2)
 const monsters = Array.from({ length: 18 }, (_, index) => `${import.meta.env.BASE_URL}monsters/${String(index + 1).padStart(2, '0')}.png`)
+
+function playGameSound(enabled: boolean, kind: 'correct' | 'wrong' | 'drop' | 'land' | 'bullseye') {
+  if (!enabled) return
+  const AudioContextClass = window.AudioContext ?? (window as AudioWindow).webkitAudioContext
+  if (!AudioContextClass) return
+  const context = new AudioContextClass()
+  const notes = kind === 'correct' ? [520, 690] : kind === 'wrong' ? [260, 210] : kind === 'drop' ? [340] : kind === 'bullseye' ? [520, 700, 900] : [180, 260]
+  notes.forEach((frequency, index) => {
+    const oscillator = context.createOscillator()
+    const gain = context.createGain()
+    oscillator.type = kind === 'drop' ? 'sine' : 'triangle'
+    oscillator.frequency.value = frequency
+    gain.gain.setValueAtTime(.0001, context.currentTime + index * .08)
+    gain.gain.exponentialRampToValueAtTime(.12, context.currentTime + index * .08 + .015)
+    gain.gain.exponentialRampToValueAtTime(.0001, context.currentTime + index * .08 + .18)
+    oscillator.connect(gain).connect(context.destination)
+    oscillator.start(context.currentTime + index * .08)
+    oscillator.stop(context.currentTime + index * .08 + .2)
+  })
+  window.setTimeout(() => context.close().catch(() => undefined), 700)
+}
 
 function Brand() {
   return <button className="brand" onClick={() => window.location.reload()} aria-label="Monsterz Play home"><span className="brand__mark"><i /><i /></span><span>MONSTERZ <b>PLAY</b></span></button>
@@ -32,8 +57,10 @@ function App() {
   const [correctAnswers, setCorrectAnswers] = useState(0)
   const [gamePoints, setGamePoints] = useState(0)
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null)
+  const [soundOn, setSoundOn] = useState(true)
+  const [rewards, setRewards] = useState<Reward[]>([])
 
-  const beginGame = () => { setQuestionIndex(0); setCorrectAnswers(0); setGamePoints(0); setFeedback(null); setScreen('question') }
+  const beginGame = () => { setQuestionIndex(0); setCorrectAnswers(0); setGamePoints(0); setRewards([]); setFeedback(null); setScreen('question') }
   const advanceQuestion = () => {
     if (questionIndex + 1 >= questionSet.questions.length) setScreen('results')
     else { setQuestionIndex((index) => index + 1); setScreen('question') }
@@ -42,6 +69,7 @@ function App() {
     if (feedback) return
     const correct = option === questionSet.questions[questionIndex].answer
     setFeedback(correct ? 'correct' : 'incorrect')
+    playGameSound(soundOn, correct ? 'correct' : 'wrong')
     if (correct) setCorrectAnswers((score) => score + 1)
     window.setTimeout(() => { setFeedback(null); if (correct) setScreen('drop'); else advanceQuestion() }, 850)
   }
@@ -60,9 +88,9 @@ function App() {
     {screen === 'home' && <Home onBuild={() => setScreen('builder')} onPlay={() => setScreen('players')} />}
     {screen === 'builder' && <SetBuilder set={questionSet} jsonText={jsonText} message={importMessage} onJsonChange={setJsonText} onImport={importSet} onSetChange={setQuestionSet} onDone={() => setScreen('players')} onBack={() => setScreen('home')} />}
     {screen === 'players' && <PlayerPicker selected={selectedMonster} onSelect={setSelectedMonster} onStart={beginGame} onBack={() => setScreen('home')} />}
-    {screen === 'question' && <QuestionScreen question={questionSet.questions[questionIndex]} number={questionIndex + 1} total={questionSet.questions.length} monster={selectedMonster} score={gamePoints} feedback={feedback} onAnswer={answerQuestion} />}
-    {screen === 'drop' && <DropGame monster={selectedMonster} totalPoints={gamePoints} onComplete={(points) => { setGamePoints((score) => score + points); advanceQuestion() }} />}
-    {screen === 'results' && <Results monster={selectedMonster} correct={correctAnswers} total={questionSet.questions.length} points={gamePoints} onReplay={beginGame} onHome={() => setScreen('home')} />}
+    {screen === 'question' && <QuestionScreen question={questionSet.questions[questionIndex]} number={questionIndex + 1} total={questionSet.questions.length} monster={selectedMonster} score={gamePoints} rewards={rewards.length} soundOn={soundOn} onSoundToggle={() => setSoundOn((on) => !on)} feedback={feedback} onAnswer={answerQuestion} />}
+    {screen === 'drop' && <DropGame monster={selectedMonster} totalPoints={gamePoints} rewards={rewards.length} soundOn={soundOn} onSoundToggle={() => setSoundOn((on) => !on)} onComplete={(points, reward) => { setGamePoints((score) => score + points); setRewards((items) => [...items, reward]); advanceQuestion() }} />}
+    {screen === 'results' && <Results monster={selectedMonster} correct={correctAnswers} total={questionSet.questions.length} points={gamePoints} rewards={rewards} onReplay={beginGame} onHome={() => setScreen('home')} />}
   </div>
 }
 
@@ -97,24 +125,34 @@ function PlayerPicker({ selected, onSelect, onStart, onBack }: { selected: numbe
   return <main className="picker page"><button className="back-button" onClick={onBack}>← Teacher dashboard</button><div className="picker-heading"><span className="eyebrow">SKY DROP</span><h1>Choose your monster</h1><p>Pick a teammate for today’s adventure.</p></div><div className="monster-grid">{monsters.map((src, index) => <button className={selected === index ? 'selected' : ''} key={src} onClick={() => onSelect(index)}><img src={src} /><span>{selected === index ? '✓' : ''}</span></button>)}</div><div className="picker-action"><div><img src={monsters[selected]} /><span><small>YOUR MONSTER</small><b>Ready to fly!</b></span></div><button className="primary" onClick={onStart}>Start game <span>→</span></button></div></main>
 }
 
-function GameHeader({ monster, score, progress }: { monster: number; score: number; progress: string }) {
-  return <header className="game-header"><Brand /><div className="game-progress"><span style={{ width: progress }} /></div><div className="game-score"><span>{score.toLocaleString()}</span> pts <img src={monsters[monster]} /></div></header>
+function GameHeader({ monster, score, rewards, progress, soundOn, onSoundToggle }: { monster: number; score: number; rewards: number; progress: string; soundOn: boolean; onSoundToggle: () => void }) {
+  return <header className="game-header"><Brand /><div className="game-progress"><span style={{ width: progress }} /></div><div className="game-score"><span className="reward-count">◆ {rewards}</span><button className="sound-toggle" onClick={onSoundToggle} aria-label={soundOn ? 'Mute sounds' : 'Turn sounds on'}>{soundOn ? '♪' : '×'}</button><span>{score.toLocaleString()}</span> pts <img src={monsters[monster]} /></div></header>
 }
 
-function QuestionScreen({ question, number, total, monster, score, feedback, onAnswer }: { question: Question; number: number; total: number; monster: number; score: number; feedback: 'correct' | 'incorrect' | null; onAnswer: (option: string) => void }) {
-  return <div className="game-page question-page"><GameHeader monster={monster} score={score} progress={`${((number - 1) / total) * 100}%`} /><main className="question-stage"><div className="question-meta"><span>QUESTION {number} OF {total}</span><span className="timer-pill">◷ 18</span></div><h1>{question.prompt}</h1><div className="answer-grid">{question.options.map((option, index) => <button key={option} className={feedback && option === question.answer ? 'correct' : feedback ? 'muted' : ''} onClick={() => onAnswer(option)}><span>{String.fromCharCode(65 + index)}</span>{option}</button>)}</div><div className="question-helper"><img src={monsters[monster]} /><span>{feedback === 'correct' ? 'Brilliant! Your supply crate is ready.' : feedback === 'incorrect' ? `Good try — the answer was ${question.answer}.` : 'Choose carefully. A correct answer earns a supply drop!'}</span></div></main></div>
+function QuestionScreen({ question, number, total, monster, score, rewards, soundOn, onSoundToggle, feedback, onAnswer }: { question: Question; number: number; total: number; monster: number; score: number; rewards: number; soundOn: boolean; onSoundToggle: () => void; feedback: 'correct' | 'incorrect' | null; onAnswer: (option: string) => void }) {
+  return <div className="game-page question-page"><GameHeader monster={monster} score={score} rewards={rewards} soundOn={soundOn} onSoundToggle={onSoundToggle} progress={`${((number - 1) / total) * 100}%`} /><main className="question-stage"><div className="question-meta"><span>QUESTION {number} OF {total}</span><span className="timer-pill">◷ 18</span></div><h1>{question.prompt}</h1><div className="answer-grid">{question.options.map((option, index) => <button key={option} className={feedback && option === question.answer ? 'correct' : feedback ? 'muted' : ''} onClick={() => onAnswer(option)}><span>{String.fromCharCode(65 + index)}</span>{option}</button>)}</div><div className="question-helper"><img src={monsters[monster]} /><span>{feedback === 'correct' ? 'Brilliant! Your supply crate is ready.' : feedback === 'incorrect' ? `Good try — the answer was ${question.answer}.` : 'Choose carefully. A correct answer earns a supply drop!'}</span></div></main></div>
 }
 
-function DropGame({ monster, totalPoints, onComplete }: { monster: number; totalPoints: number; onComplete: (points: number) => void }) {
-  const [x, setX] = useState(12), [direction, setDirection] = useState(1), [droppedX, setDroppedX] = useState<number | null>(null), [result, setResult] = useState<{ points: number; label: string } | null>(null)
-  const target = 69
+function DropGame({ monster, totalPoints, rewards, soundOn, onSoundToggle, onComplete }: { monster: number; totalPoints: number; rewards: number; soundOn: boolean; onSoundToggle: () => void; onComplete: (points: number, reward: Reward) => void }) {
+  const [x, setX] = useState(12), [direction, setDirection] = useState(1), [droppedX, setDroppedX] = useState<number | null>(null), [landingX, setLandingX] = useState<number | null>(null), [result, setResult] = useState<{ points: number; label: string; reward: Reward; bullseye: boolean } | null>(null)
+  const target = 32 + ((totalPoints * 7 + 37) % 42)
+  const wind = totalPoints % 2 === 0 ? 4.5 : -5.5
   useEffect(() => { if (droppedX !== null) return; const timer = window.setInterval(() => setX((current) => { if (current >= 88) { setDirection(-1); return 87.4 } if (current <= 12) { setDirection(1); return 12.6 } return current + direction * .65 }), 18); return () => window.clearInterval(timer) }, [direction, droppedX])
-  const drop = () => { if (droppedX !== null) return; setDroppedX(x); const distance = Math.abs(x - target); const points = distance < 3.5 ? 500 : distance < 8 ? 300 : distance < 15 ? 150 : 75; const label = distance < 3.5 ? 'Perfect drop!' : distance < 8 ? 'Great landing!' : distance < 15 ? 'Nice one!' : 'Supplies delivered!'; window.setTimeout(() => setResult({ points, label }), 850) }
-  return <div className="game-page drop-page"><GameHeader monster={monster} score={totalPoints} progress="50%" /><main className="sky-stage" onClick={drop}><div className="sun" /><div className="cloud cloud--a" /><div className="cloud cloud--b" /><div className="cloud cloud--c" /><div className="flight" style={{ left: `${droppedX ?? x}%` }}><div className="balloon"><span /><span /><span /></div><div className="basket"><img src={monsters[monster]} /></div></div>{droppedX !== null && <div className="crate" style={{ left: `${droppedX}%` }}><span>★</span></div>}<div className="mountains"><i /><i /><i /><i /></div><div className="island" style={{ left: `${target}%` }}><span className="target"><i /><i /><i /></span><div className="tree">♣</div></div>{!result && <div className="drop-instruction"><b>{droppedX === null ? 'CLICK ANYWHERE TO DROP' : 'Here it comes!'}</b><span>Land the crate near the centre of the target</span></div>}{result && <div className="result-pop"><span>+{result.points}</span><h2>{result.label}</h2><p>The islanders got their supplies.</p><button className="primary" onClick={(event) => { event.stopPropagation(); onComplete(result.points) }}>Next question →</button></div>}</main></div>
+  const drop = () => {
+    if (droppedX !== null) return
+    const landing = Math.max(5, Math.min(95, x + wind))
+    setDroppedX(x); setLandingX(landing); playGameSound(soundOn, 'drop')
+    const distance = Math.abs(landing - target), bullseye = distance < 2.8
+    const points = bullseye ? 750 : distance < 7 ? 400 : distance < 14 ? 200 : 100
+    const label = bullseye ? 'Bullseye!' : distance < 7 ? 'Great landing!' : distance < 14 ? 'Nice one!' : 'Supplies delivered!'
+    const reward = bullseye ? { icon: '✦', name: 'Sky crystal' } : distance < 7 ? { icon: '●', name: 'Golden orb' } : { icon: '★', name: 'Supply badge' }
+    window.setTimeout(() => { setResult({ points, label, reward, bullseye }); playGameSound(soundOn, bullseye ? 'bullseye' : 'land') }, 920)
+  }
+  return <div className={`game-page drop-page ${result?.bullseye ? 'drop-page--bullseye' : ''}`}><GameHeader monster={monster} score={totalPoints} rewards={rewards} soundOn={soundOn} onSoundToggle={onSoundToggle} progress="50%" /><main className="sky-stage" onClick={drop}><div className="sun" /><div className="cloud cloud--a" /><div className="cloud cloud--b" /><div className="cloud cloud--c" /><div className="wind-meter"><small>WIND</small><b>{wind > 0 ? '→' : '←'}</b><span>{Math.abs(wind).toFixed(1)}</span></div><div className="flight" style={{ left: `${droppedX ?? x}%` }}><div className="balloon"><span /><span /><span /></div><div className="basket"><img src={monsters[monster]} /></div></div>{droppedX !== null && <div className={`crate ${result ? 'crate--landed' : ''}`} style={{ left: `${droppedX}%`, '--landing-drift': `${wind}vw` } as CSSProperties}><span>★</span></div>}<div className="mountains"><i /><i /><i /><i /></div><div className="island" style={{ left: `${target}%` }}><span className="target"><i /><i /><i /></span><span className="bonus-flag">+750</span><div className="tree">♣</div></div>{result && landingX !== null && <div className="impact" style={{ left: `${landingX}%` }}><i /><i /><i /><i /><i /><span /></div>}{!result && <div className="drop-instruction"><b>{droppedX === null ? 'CLICK ANYWHERE TO DROP' : 'Wind is carrying it…'}</b><span>Aim upwind and land near the golden centre</span></div>}{result && <div className="result-pop"><div className="reward-gem">{result.reward.icon}</div><span>+{result.points}</span><h2>{result.label}</h2><p><b>{result.reward.name}</b> added to your collection.</p><button className="primary" onClick={(event) => { event.stopPropagation(); onComplete(result.points, result.reward) }}>Next question →</button></div>}</main></div>
 }
 
-function Results({ monster, correct, total, points, onReplay, onHome }: { monster: number; correct: number; total: number; points: number; onReplay: () => void; onHome: () => void }) {
-  return <main className="results-page page"><div className="confetti">✦ <span>●</span> ◆ <i>✦</i> ●</div><img className="result-monster" src={monsters[monster]} /><span className="eyebrow">ADVENTURE COMPLETE</span><h1>Fantastic flying!</h1><p>You answered, aimed and helped the islanders.</p><div className="result-stats"><div><small>ACCURACY</small><b>{Math.round((correct / total) * 100)}%</b><span>{correct} of {total} correct</span></div><div><small>SKY DROP SCORE</small><b>{points.toLocaleString()}</b><span>points collected</span></div></div><div className="button-row centre"><button className="primary" onClick={onReplay}>Play again</button><button className="secondary" onClick={onHome}>Teacher dashboard</button></div></main>
+function Results({ monster, correct, total, points, rewards, onReplay, onHome }: { monster: number; correct: number; total: number; points: number; rewards: Reward[]; onReplay: () => void; onHome: () => void }) {
+  return <main className="results-page page"><div className="confetti">✦ <span>●</span> ◆ <i>✦</i> ●</div><img className="result-monster" src={monsters[monster]} /><span className="eyebrow">ADVENTURE COMPLETE</span><h1>Fantastic flying!</h1><p>You answered, aimed and helped the islanders.</p><div className="result-stats"><div><small>ACCURACY</small><b>{Math.round((correct / total) * 100)}%</b><span>{correct} of {total} correct</span></div><div><small>SKY DROP SCORE</small><b>{points.toLocaleString()}</b><span>points collected</span></div></div>{rewards.length > 0 && <section className="reward-shelf"><small>YOUR FINDS</small><div>{rewards.map((reward, index) => <span key={`${reward.name}-${index}`} title={reward.name}>{reward.icon}<b>{reward.name}</b></span>)}</div></section>}<div className="button-row centre"><button className="primary" onClick={onReplay}>Play again</button><button className="secondary" onClick={onHome}>Teacher dashboard</button></div></main>
 }
 
 export default App
