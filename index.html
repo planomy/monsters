@@ -2,34 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/monsters/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Monsterz — classroom tally tracker for rewarding student moments" />
+    <meta name="description" content="Monsterz Play — quick teacher-made quizzes with playful monster mini-games" />
     <meta name="theme-color" content="#7c3aed" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
-    <title>Monsterz</title>
-    <script src="/gradient-boot.js"></script>
-    <script>
-      (function () {
-        var pref = localStorage.getItem('monsterz-theme') || 'system';
-        var dark =
-          pref === 'dark' ||
-          (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-        document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
-        if (dark) {
-          var gradients = window.__MONSTERZ_GRADIENT_BOOT__ || {};
-          var gradientId = localStorage.getItem('monsterz-gradient') || 'eggplant';
-          var css = gradients[gradientId] || gradients.eggplant;
-          if (css) {
-            document.documentElement.dataset.gradient = gradientId;
-            document.documentElement.style.setProperty('--app-gradient', css);
-          }
-        }
-      })();
-    </script>
+    <title>Monsterz Play — Sky Drop</title>
   </head>
   <body>
     <div id="root"></div>
