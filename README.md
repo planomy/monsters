@@ -1,5 +1,7 @@
 # Monsterz
 
+> `monster-drop-prototype` is an isolated concept branch for **Monsterz Play**. It turns the existing monster artwork into a clickable learning-game prototype with a teacher set library, validated AI JSON import, character selection, multiple-choice questions, the Sky Drop mini-game, scoring, and results. The existing classroom tally app remains unchanged on `main`.
+
 A classroom tally tracker inspired by ClassDojo — reward students for moments like turning on their camera to greet you in the morning.
 
 **Live site:** [planomy.github.io/monsters](https://planomy.github.io/monsters)
